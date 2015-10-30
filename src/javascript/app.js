@@ -14,22 +14,31 @@ Ext.define("TSMilestoneRoadmapApp", {
                         
     launch: function() {
         var me = this;
-        this.setLoading("Loading stuff...");
+        this.setLoading("Loading milestones...");
         
         this._getLowestPITypeName().then({
             scope  : this,
             success: function(types) {
+                this.setLoading('Loading items...');
+                
                 this.PortfolioItemType = types[0];
                 this.logger.log('PI Type:', this.PortfolioItemType);
                 
                 var start_date = Rally.util.DateTime.add(new Date(), 'month', -1);
                 
-                this.down('#display_box').add({ 
+                this.roadmap = this.down('#display_box').add({ 
                     xtype: 'tsroadmaptable',
                     startDate: start_date,
                     monthCount: 9,
-                    cardModel: this.PortfolioItemType.get('TypePath')
+                    cardModel: this.PortfolioItemType.get('TypePath'),
+                    listeners: {
+                        gridReady: function() {
+                            me.setLoading(false);
+                        }
+                    }
                 });
+                
+                
             },
             failure: function(msg) {
                 Ext.Msg.alert('Problem loading PI Type Names', msg);

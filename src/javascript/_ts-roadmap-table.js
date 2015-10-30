@@ -56,6 +56,15 @@
         }
         this.callParent(arguments);
         
+        this.addEvents(
+            /**
+             * @event
+             * Fires when the grid has been rendered
+             * @param {Rally.technicalservices.RoadmapTable} this
+             * @param {Rally.ui.grid.Grid} grid
+             */
+            'gridReady'
+        );
         var columns = this._getColumns();
         this._defineCustomModel(columns);
         
@@ -192,6 +201,7 @@
                     });
                 });
                 table_store.loadRecords(Ext.Object.getValues(rows_by_project_oid));
+                this.fireEvent('gridReady', this, this.grid);
             },
             failure: function(msg) {
                 Ext.Msg.alert('Problem loading artifacts', msg);
