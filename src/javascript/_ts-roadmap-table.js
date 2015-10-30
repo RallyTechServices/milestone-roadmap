@@ -19,17 +19,24 @@
 
     config: {
         /**
-         * @cfg {Rally.data.wsapi.Store} store (reqd)
+         * @cfg {date} startDate 
          *
-         * Store for the items that will show inside the grid
+         * Monthly columns start with this date (defaults to today)
          */
-        store: null,
+        startDate: new Date(),
+        /**
+         * 
+         * @cfg {Number} monthCount
+         * Number of columns to show
+         * 
+         */
+        monthCount: 3,
         /**
          * 
          * @cfg {Rally.data.Model} (reqd)
-         * The model of item to display 
+         * The model of items to display 
          */
-        model: null
+        cardModel: null
     },
 
     /**
@@ -43,9 +50,9 @@
     },
 
     initComponent: function () {
-        if ( Ext.isEmpty(this.store) ) {
-            console.error("Rally.technicalservices.RoadmapTable requires a milestone store");
-            throw "Rally.technicalservices.RoadmapTable requires a milestone store";
+        if ( Ext.isEmpty(this.cardModel) ) {
+            console.error("Rally.technicalservices.RoadmapTable requires a model name for the cards");
+            throw "Rally.technicalservices.RoadmapTable requires a model name for the cards";
         }
         this.callParent(arguments);
         
@@ -59,14 +66,28 @@
             store: table_store,
             columnCfgs: columns,
             showPagingToolbar : false,
-            showRowActionsColumn : false
+            showRowActionsColumn : false,
+            sortableColumns: false
         });
         
-        this.store.load({
+        this._loadCards();
+    },
+    
+    _loadCards: function() {
+        this.card_store = Ext.create('Rally.data.wsapi.Store',{
+            model: 'Milestone',
+            filters: [
+                {property:'TargetDate', operator: '>=', value: Rally.util.DateTime.add(this.startDate, 'month', -1)},
+                {property:'TargetDate', operator: '<=', value: Rally.util.DateTime.add(this.startDate, 'month', this.monthCount+1)}
+            ],
+            fetch: ['FormattedID', 'Name', 'Artifacts', 'ObjectID','TargetDate']
+        });
+                
+        this.card_store.load({
             scope: this,
             callback : function(records, operation, successful) {
                 if (successful){
-                    this._updateRows(records, table_store);
+                    this._updateRows(records, this.grid.getStore());
                 } else {
                     console.log('Problem loading: ' + operation.error.errors.join('. '));
                     Ext.Msg.alert('Problem loading milestones', operation.error.errors.join('. '));
@@ -92,14 +113,28 @@
                 console.log("Adding artifact: ", artifact, milestone, this);
                 var month = Ext.util.Format.date(milestone, 'F');
                 if ( Ext.isEmpty(this.get(month)) ) {
-                    this.set(month, [artifact]);
+                    this.set(month, [artifact.getData()]);
                 } else {
                     var artifacts = this.get(month);
-                    artifacts.push(artifact);
+                    artifacts.push(artifact.getData());
                     this.set(month, artifacts);
                 }
             }
         });
+    },
+    
+    cardTemplate: new Ext.XTemplate(
+        "<tpl for='.'>",
+            "<div class='ts_card'>{Name}</div>",
+        "</tpl>"
+    ),
+
+    
+    getCellRenderer: function() {
+        var me = this;
+        return function(value, meta, record) {
+           return me.cardTemplate.apply(value);
+        }
     },
     
     _getColumns: function() {
@@ -111,12 +146,16 @@
         
         var month_stamp = Rally.util.DateTime.add(new Date(), 'month', -1);
         
+        var card_renderer = this.getCellRenderer();
+        
         for ( var i=0; i<9; i++ ) {
             var month = Ext.util.Format.date(month_stamp, 'F');
             columns.push({
                 dataIndex: month,
                 text: month,
-                flex: 1
+                flex: 1,
+                renderer: card_renderer,
+                align: 'center'
             });
             
             month_stamp = Rally.util.DateTime.add(month_stamp, 'month', 1);
@@ -127,12 +166,13 @@
     
     _updateRows: function(milestones, table_store) {
         var me = this;
-        
         var promises = [];
         
         Ext.Array.each(milestones, function(milestone){
-            var collection_store = milestone.getCollection('Artifacts');
-            promises.push( function() { return me._loadCollectionStore(collection_store,milestone.get('TargetDate')); } );
+            var oid = milestone.get('ObjectID');
+            var target_date = milestone.get('TargetDate');
+            
+            promises.push( function() { return me._loadMilestoneItems(oid,target_date); } );
         });
         
         Deft.Chain.sequence(promises).then({
@@ -175,21 +215,28 @@
     },
     
     
-    _loadCollectionStore: function(collection_store, milestone) {
+    _loadMilestoneItems: function(milestone_oid, milestone_date) {
         var deferred = Ext.create('Deft.Deferred');
-        collection_store.load({
+        
+        console.log("Loading ", this.cardModel, " with milestone date of ", milestone_date);
+        
+        var config = {
+            model: this.cardModel,
             fetch: ['FormattedID', 'Name', 'ObjectID','Project'],
-            callback: function(artifacts, operation, successful) {
-                if (successful){
-                    var artifacts_by_milestone = {};
-                    artifacts_by_milestone[milestone] = artifacts;
-                    deferred.resolve(artifacts_by_milestone);
-                } else {
-                    deferred.reject('Problem loading: ' + operation.error.errors.join('. '));
-                }
-                
+            filters: [{property:'Milestones.ObjectID', operator: 'contains', value: milestone_oid}]
+        };
+        
+        TSUtilities.loadWSAPIItems(config).then({
+            success: function(artifacts) {
+                var artifacts_by_milestone = {};
+                artifacts_by_milestone[milestone_date] = artifacts;
+                deferred.resolve(artifacts_by_milestone);
+            },
+            failure: function(msg) {
+                deferred.reject(msg);
             }
         });
+
         return deferred;
     }
     

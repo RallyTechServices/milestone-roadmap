@@ -1,17 +1,10 @@
-.app {
-}
-.tsinfolink {
-    position:absolute;
-    right:0px;
-    width: 14px;
-    height: 14px;
-    border-radius: 7px;
+div.ts_card {
+    margin: 2px;
+    padding: 2px;
+    background-color: #E5E4E2;
     text-align: center;
-    color: white;
-    background: #C0C0C0;
-    border-style: solid;
-    border-width: 1px;
-    margin-top: 25px;
-    margin-right: 5px;
-    cursor: pointer;
+    font-size: 9px;
+    
+    border: 1px solid black;
+    box-shadow: 3px 3px grey;
 }

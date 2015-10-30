@@ -22,15 +22,13 @@ Ext.define("TSMilestoneRoadmapApp", {
                 this.PortfolioItemType = types[0];
                 this.logger.log('PI Type:', this.PortfolioItemType);
                 
-                var store = Ext.create('Rally.data.wsapi.Store',{
-                    model: 'Milestone',
-                    fetch: ['FormattedID', 'Name', 'Artifacts', 'ObjectID','TargetDate']
-                });
+                var start_date = Rally.util.DateTime.add(new Date(), 'month', -1);
                 
                 this.down('#display_box').add({ 
                     xtype: 'tsroadmaptable',
-                    store: store,
-                    model: this.PortfolioItemType.get('TypePath')
+                    startDate: start_date,
+                    monthCount: 9,
+                    cardModel: this.PortfolioItemType.get('TypePath')
                 });
             },
             failure: function(msg) {
@@ -56,30 +54,7 @@ Ext.define("TSMilestoneRoadmapApp", {
             filters: [ { property:"Ordinal", operator:"=", value:0} ]
         };
         
-        return this._loadWSAPIItems(config);
-    },
-    
-    _loadWSAPIItems: function(config){
-        var deferred = Ext.create('Deft.Deferred');
-        var me = this;
-        
-        this.logger.log(config.model, "Loading with filters: ", Ext.clone(config.filters));
-        
-        var default_config = {
-            fetch: ['ObjectID']
-        };
-        
-        Ext.create('Rally.data.wsapi.Store', Ext.merge(default_config,config)).load({
-            callback : function(records, operation, successful) {
-                if (successful){
-                    deferred.resolve(records);
-                } else {
-                    me.logger.log("Failed: ", operation);
-                    deferred.reject('Problem loading: ' + operation.error.errors.join('. '));
-                }
-            }
-        });
-        return deferred.promise;
+        return TSUtilities.loadWSAPIItems(config);
     },
     
     _displayGrid: function(store,field_names){
