@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TS Milestone Roadmap</title>
+    <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
+    <!--  Build Date: Thu Oct 29 2015 20:29:16 GMT-0700 (PDT) -->
+    
+    <script type="text/javascript">
+        var APP_BUILD_DATE = "Thu Oct 29 2015 20:29:16 GMT-0700 (PDT)";
+        var CHECKSUM = 4798901188;
+    </script>
+    
+    <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
+
+    <script type="text/javascript">
+        Rally.onReady(function() {
+             
+/**
+ * A link that pops up a version dialog box
+ */
+
+Ext.define('Rally.technicalservices.InfoLink',{
+    extend: 'Rally.ui.dialog.Dialog',
+    alias: 'widget.tsinfolink',
+    
+    /**
+     * @cfg {String} informationHtml
+     * Additional text to be displayed on the popup dialog (for exmaple,
+     * to add a description of the app's use or functionality)
+     */
+    informationHtml: null,
+    
+    /**
+     * 
+     * cfg {String} title
+     * The title for the dialog box
+     */
+    title: "Build Information",
+    
+    defaults: { padding: 5, margin: 5 },
+
+    closable: true,
+     
+    draggable: true,
+
+    autoShow: true,
+   
+    width: 350, 
+    
+    initComponent: function() {
+        var id = Ext.id(this);
+        this.title =  "<span class='icon-help'> </span>" + this.title;
+        this.callParent(arguments);
+    },
+    
+    _generateChecksum: function(string){
+        var chk = 0x12345678,
+            i;
+        string = string.replace(/var CHECKSUM = .*;/,"");
+        string = string.replace(/\s/g,"");  //Remove all whitespace from the string.
+        
+        for (i = 0; i < string.length; i++) {
+            chk += (string.charCodeAt(i) * i);
+        }
+    
+        return chk;
+    },
+    
+    _checkChecksum: function(container) {
+        var deferred = Ext.create('Deft.Deferred');
+        console.log("_checkChecksum", container);
+        var me = this;
+        
+        Ext.Ajax.request({
+            url: document.URL,
+            params: {
+                id: 1
+            },
+            success: function (response) {
+                text = response.responseText;
+                if ( CHECKSUM ) {
+                    if ( CHECKSUM !== me._generateChecksum(text) ) {
+                        console.log("Checksums don't match!");
+                        deferred.resolve(false);
+                        return;
+                    }
+                }
+                deferred.resolve(true);
+            }
+        });
+        
+        return deferred.promise;
+    },
+    
+    afterRender: function() {
+        var app = Rally.getApp();
+        
+        if (! app.isExternal() ) {
+                
+            this._checkChecksum(app).then({
+                scope: this,
+                success: function(result){
+                    if ( !result ) {
+                        this.addDocked({
+                            xtype:'container',
+                            cls: 'build-info',
+                            padding: 2,
+                            html:'<span class="icon-warning"> </span>Checksums do not match'
+                        });
+                    }
+                },
+                failure: function(msg){
+                    console.log("oops:",msg);
+                }
+            });
+        } else {
+            this.addDocked({
+                xtype:'container',
+                cls: 'build-info',
+                padding: 2,
+                html:'... Running externally'
+            });
+        }
+        this.callParent(arguments);
+    },
+    
+    beforeRender: function() {
+        var me = this;
+        this.callParent(arguments);
+
+        if (this.informationHtml) {
+            this.addDocked({
+                xtype: 'component',
+                componentCls: 'intro-panel',
+                padding: 2,
+                html: this.informationHtml
+            });
+        }
+        
+        this.addDocked({
+            xtype:'container',
+            cls: 'build-info',
+            padding: 2,
+            html:"This app was created by the Rally Technical Services Team."
+        });
+        
+        if ( APP_BUILD_DATE ) {
+            this.addDocked({
+                xtype:'container',
+                cls: 'build-info',
+                padding: 2,
+                html:'Build date/time: ' + APP_BUILD_DATE
+            });
+        }
+    }
+});
+
+/*
+ */
+Ext.define('Rally.technicalservices.Logger',{
+    constructor: function(config){
+        Ext.apply(this,config);
+    },
+    log: function(args){
+        var timestamp = "[ " + Ext.util.Format.date(new Date(), "Y-m-d H:i:s.u") + " ]";
+        //var output_args = arguments;
+        //output_args.unshift( [ "[ " + timestamp + " ]" ] );
+        //output_args = Ext.Array.push(output_args,arguments);
+        
+        var output_args = [];
+        output_args = Ext.Array.push(output_args,[timestamp]);
+        output_args = Ext.Array.push(output_args, Ext.Array.slice(arguments,0));
+
+        window.console && console.log.apply(console,output_args);
+    }
+
+});
+
+/**
+ * A grid that shows a roadmap.  Each row is a Rally project, each 
+ * column is a month.  
+ * 
+ * The items that appear inside the cells has a milestone that falls into
+ * the month and belongs to the project of the row.
+ * 
+ */
+ 
+ Ext.define('Rally.technicalservices.RoadmapTable', {
+    extend: 'Ext.Container',
+
+    alias: 'widget.tsroadmaptable',
+
+    /**
+     * @property {String} cls The base class applied to this object's element
+     */
+    cls: "tsroadmap",
+
+    config: {
+        /**
+         * @cfg {Rally.data.wsapi.Store} store (reqd)
+         *
+         * Store for the items that will show inside the grid
+         */
+        store: null,
+        /**
+         * 
+         * @cfg {Rally.data.Model} (reqd)
+         * The model of item to display 
+         */
+        model: null
+    },
+
+    /**
+     * @constructor
+     * @param {Object} config
+     */
+    constructor: function (config) {
+        this.mergeConfig(config);
+        
+        this.callParent([this.config]);
+    },
+
+    initComponent: function () {
+        if ( Ext.isEmpty(this.store) ) {
+            console.error("Rally.technicalservices.RoadmapTable requires a milestone store");
+            throw "Rally.technicalservices.RoadmapTable requires a milestone store";
+        }
+        this.callParent(arguments);
+        
+        var columns = this._getColumns();
+        this._defineCustomModel(columns);
+        
+        var table_store = Ext.create('Rally.data.custom.Store',{ model: 'TSTableRow' });
+        
+        this.grid = this.add({ 
+            xtype:'rallygrid', 
+            store: table_store,
+            columnCfgs: columns,
+            showPagingToolbar : false,
+            showRowActionsColumn : false
+        });
+        
+        this.store.load({
+            scope: this,
+            callback : function(records, operation, successful) {
+                if (successful){
+                    this._updateRows(records, table_store);
+                } else {
+                    console.log('Problem loading: ' + operation.error.errors.join('. '));
+                    Ext.Msg.alert('Problem loading milestones', operation.error.errors.join('. '));
+                }
+            }
+        });
+    },
+
+    _defineCustomModel: function(columns) {
+        var fields = Ext.Array.map(columns, function(column){
+            var name = column.dataIndex;
+            var type = 'object';
+            if ( name == 'Project' ) { type = 'string'; }
+            
+            return { name: name, type: type };
+        });
+        
+        Ext.define('TSTableRow', {
+            extend: 'Ext.data.Model',
+            fields: fields,
+            
+            addArtifact: function(artifact,milestone) {
+                console.log("Adding artifact: ", artifact, milestone, this);
+                var month = Ext.util.Format.date(milestone, 'F');
+                if ( Ext.isEmpty(this.get(month)) ) {
+                    this.set(month, [artifact]);
+                } else {
+                    var artifacts = this.get(month);
+                    artifacts.push(artifact);
+                    this.set(month, artifacts);
+                }
+            }
+        });
+    },
+    
+    _getColumns: function() {
+        var columns = [{
+            dataIndex: 'Project',
+            text: '',
+            flex: 1
+        }];
+        
+        var month_stamp = Rally.util.DateTime.add(new Date(), 'month', -1);
+        
+        for ( var i=0; i<9; i++ ) {
+            var month = Ext.util.Format.date(month_stamp, 'F');
+            columns.push({
+                dataIndex: month,
+                text: month,
+                flex: 1
+            });
+            
+            month_stamp = Rally.util.DateTime.add(month_stamp, 'month', 1);
+        }
+        
+        return columns;
+    },
+    
+    _updateRows: function(milestones, table_store) {
+        var me = this;
+        
+        var promises = [];
+        
+        Ext.Array.each(milestones, function(milestone){
+            var collection_store = milestone.getCollection('Artifacts');
+            promises.push( function() { return me._loadCollectionStore(collection_store,milestone.get('TargetDate')); } );
+        });
+        
+        Deft.Chain.sequence(promises).then({
+            scope: this,
+            success: function(results) {
+                var artifacts_by_milestone = {};
+                Ext.Array.each(results, function(artifacts_by_a_milestone){
+                    artifacts_by_milestone = Ext.apply(artifacts_by_milestone, artifacts_by_a_milestone);
+                });
+                
+                var rows_by_project_oid = this._getRowsFromMilestoneHash(artifacts_by_milestone);
+                
+                Ext.Object.each( artifacts_by_milestone, function(milestone, artifacts) {
+                    Ext.Array.each(artifacts, function(artifact){
+                        var project_oid = artifact.get('Project').ObjectID;
+                        rows_by_project_oid[project_oid].addArtifact(artifact,milestone);
+                    });
+                });
+                table_store.loadRecords(Ext.Object.getValues(rows_by_project_oid));
+            },
+            failure: function(msg) {
+                Ext.Msg.alert('Problem loading artifacts', msg);
+            }
+        });
+    },
+    
+    _getRowsFromMilestoneHash: function(artifacts_by_milestone) {
+        var rows_by_project_oid = {};
+        
+        Ext.Object.each( artifacts_by_milestone, function(milestone, artifacts){
+            Ext.Array.each(artifacts, function(artifact) {
+                var project_oid = artifact.get('Project').ObjectID;
+                rows_by_project_oid[project_oid] = Ext.create('TSTableRow',{
+                    Project: artifact.get('Project').Name
+                });
+            });
+        });
+        
+        return rows_by_project_oid;
+    },
+    
+    
+    _loadCollectionStore: function(collection_store, milestone) {
+        var deferred = Ext.create('Deft.Deferred');
+        collection_store.load({
+            fetch: ['FormattedID', 'Name', 'ObjectID','Project'],
+            callback: function(artifacts, operation, successful) {
+                if (successful){
+                    var artifacts_by_milestone = {};
+                    artifacts_by_milestone[milestone] = artifacts;
+                    deferred.resolve(artifacts_by_milestone);
+                } else {
+                    deferred.reject('Problem loading: ' + operation.error.errors.join('. '));
+                }
+                
+            }
+        });
+        return deferred;
+    }
+    
+
+});
+
+Ext.define("TSMilestoneRoadmapApp", {
+    extend: 'Rally.app.App',
+    componentCls: 'app',
+    logger: new Rally.technicalservices.Logger(),
+    defaults: { margin: 10 },
+    items: [
+        {xtype:'container',itemId:'display_box', minHeight: 500 }
+    ],
+
+    // TODO
+    integrationHeaders : {
+        name : "TSMilestoneRoadmapApp"
+    },
+                        
+    launch: function() {
+        var me = this;
+        this.setLoading("Loading stuff...");
+        
+        this._getLowestPITypeName().then({
+            scope  : this,
+            success: function(types) {
+                this.PortfolioItemType = types[0];
+                this.logger.log('PI Type:', this.PortfolioItemType);
+                
+                var store = Ext.create('Rally.data.wsapi.Store',{
+                    model: 'Milestone',
+                    fetch: ['FormattedID', 'Name', 'Artifacts', 'ObjectID','TargetDate']
+                });
+                
+                this.down('#display_box').add({ 
+                    xtype: 'tsroadmaptable',
+                    store: store,
+                    model: this.PortfolioItemType.get('TypePath')
+                });
+            },
+            failure: function(msg) {
+                Ext.Msg.alert('Problem loading PI Type Names', msg);
+            }
+        });
+    },
+    
+    _getCardboardConfig: function() {
+        return {
+            types: [this.PortfolioItemType.get('TypePath')],
+            attribute: 'State',
+            columnConfig: {
+                xtype: 'tsmilestonecolumn'
+            }
+        };
+    },
+    
+    _getLowestPITypeName: function() {
+        config = {
+            model: 'TypeDefinition', 
+            fetch: ["TypePath"],
+            filters: [ { property:"Ordinal", operator:"=", value:0} ]
+        };
+        
+        return this._loadWSAPIItems(config);
+    },
+    
+    _loadWSAPIItems: function(config){
+        var deferred = Ext.create('Deft.Deferred');
+        var me = this;
+        
+        this.logger.log(config.model, "Loading with filters: ", Ext.clone(config.filters));
+        
+        var default_config = {
+            fetch: ['ObjectID']
+        };
+        
+        Ext.create('Rally.data.wsapi.Store', Ext.merge(default_config,config)).load({
+            callback : function(records, operation, successful) {
+                if (successful){
+                    deferred.resolve(records);
+                } else {
+                    me.logger.log("Failed: ", operation);
+                    deferred.reject('Problem loading: ' + operation.error.errors.join('. '));
+                }
+            }
+        });
+        return deferred.promise;
+    },
+    
+    _displayGrid: function(store,field_names){
+        this.down('#display_box').add({
+            xtype: 'rallygrid',
+            store: store,
+            columnCfgs: field_names
+        });
+    },
+    
+    getOptions: function() {
+        return [
+            {
+                text: 'About...',
+                handler: this._launchInfo,
+                scope: this
+            }
+        ];
+    },
+    
+    _launchInfo: function() {
+        if ( this.about_dialog ) { this.about_dialog.destroy(); }
+        this.about_dialog = Ext.create('Rally.technicalservices.InfoLink',{});
+    },
+    
+    isExternal: function(){
+        return typeof(this.getAppId()) == 'undefined';
+    },
+    
+    //onSettingsUpdate:  Override
+    onSettingsUpdate: function (settings){
+        this.logger.log('onSettingsUpdate',settings);
+        // Ext.apply(this, settings);
+        this.launch();
+    }
+});
+
+            
+               Rally.launchApp('TSMilestoneRoadmapApp', {
+                   name: 'TS Milestone Roadmap'
+               });
+        });
+    </script>
+    
+    <style type="text/css">
+
+.app {
+}
+.tsinfolink {
+    position:absolute;
+    right:0px;
+    width: 14px;
+    height: 14px;
+    border-radius: 7px;
+    text-align: center;
+    color: white;
+    background: #C0C0C0;
+    border-style: solid;
+    border-width: 1px;
+    margin-top: 25px;
+    margin-right: 5px;
+    cursor: pointer;
+}
+    </style>
+
+</head>
+<body></body>
+</html>
