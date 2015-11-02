@@ -3,10 +3,20 @@ Ext.define("TSMilestoneRoadmapApp", {
     componentCls: 'app',
     logger: new Rally.technicalservices.Logger(),
     defaults: { margin: 10 },
+    
+    config: {
+        defaultSettings: {
+            colorStateMapping: {
+                'defaultValue': 'Platinum',
+                'Discovering': 'cyan'
+            }
+        }
+    },
+    
     items: [
-        {xtype:'container',itemId:'display_box', minHeight: 500 }
+        {xtype:'container', itemId:'selector_box', minHeight: 50},
+        {xtype:'container', itemId: 'display_box'}
     ],
-
     // TODO
     integrationHeaders : {
         name : "TSMilestoneRoadmapApp"
@@ -16,7 +26,9 @@ Ext.define("TSMilestoneRoadmapApp", {
         var me = this;
         this.setLoading("Loading milestones...");
         
-        this._getLowestPITypeName().then({
+        if ( this.down('tsroadmaptable') ) { this.down('tsroadmaptable').destroy(); }
+        
+        this._getLowestPIType().then({
             scope  : this,
             success: function(types) {
                 this.setLoading('Loading items...');
@@ -25,11 +37,17 @@ Ext.define("TSMilestoneRoadmapApp", {
                 this.logger.log('PI Type:', this.PortfolioItemType);
                 
                 var start_date = Rally.util.DateTime.add(new Date(), 'month', -1);
+                var colors = this.getSetting('colorStateMapping');
+                
+                if ( Ext.isString(colors) ) { colors = Ext.JSON.decode(colors); }
+                
+                this.logger.log("Colors: ", colors);
                 
                 this.roadmap = this.down('#display_box').add({ 
                     xtype: 'tsroadmaptable',
                     startDate: start_date,
                     monthCount: 9,
+                    stateColors: colors,
                     cardModel: this.PortfolioItemType.get('TypePath'),
                     listeners: {
                         gridReady: function() {
@@ -56,8 +74,8 @@ Ext.define("TSMilestoneRoadmapApp", {
         };
     },
     
-    _getLowestPITypeName: function() {
-        config = {
+    _getLowestPIType: function() {
+        var config = {
             model: 'TypeDefinition', 
             fetch: ["TypePath"],
             filters: [ { property:"Ordinal", operator:"=", value:0} ]
@@ -96,7 +114,32 @@ Ext.define("TSMilestoneRoadmapApp", {
     //onSettingsUpdate:  Override
     onSettingsUpdate: function (settings){
         this.logger.log('onSettingsUpdate',settings);
-        // Ext.apply(this, settings);
+        
+        //Ext.apply(this, settings);
         this.launch();
+    },
+    
+    getSettingsFields: function() {
+        var me = this;
+        
+        return [
+        {
+            name: 'colorStateMapping',
+            readyEvent: 'ready',
+            fieldLabel: 'Colors by State',
+            margin: '5px 0 0 30px',
+            xtype: 'colorsettingsfield',
+            handlesEvents: {
+                fieldselected: function(field) {
+                    this.refreshWithNewField(field);
+                }
+            },
+            listeners: {
+                ready: function() {
+                    this.fireEvent('colorsettingsready');
+                }
+            },
+            bubbleEvents: 'colorsettingsready'
+        }];
     }
 });

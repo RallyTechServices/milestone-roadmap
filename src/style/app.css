@@ -1,10 +1,8 @@
 div.ts_card {
     margin: 2px;
     padding: 2px;
-    background-color: #E5E4E2;
     text-align: center;
     font-size: 9px;
-    
-    border: 1px solid black;
-    box-shadow: 3px 3px grey;
+    border: 1px solid black !important;
+    box-shadow: 3px 3px grey !important;
 }

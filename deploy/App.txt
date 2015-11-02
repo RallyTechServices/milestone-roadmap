@@ -3,11 +3,11 @@
 <head>
     <title>TS Milestone Roadmap</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Fri Oct 30 2015 15:09:13 GMT-0700 (PDT) -->
+    <!--  Build Date: Sun Nov 01 2015 19:19:27 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Fri Oct 30 2015 15:09:13 GMT-0700 (PDT)";
-        var CHECKSUM = 5987782282;
+        var APP_BUILD_DATE = "Sun Nov 01 2015 19:19:27 GMT-0800 (PST)";
+        var CHECKSUM = 11759299340;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -204,6 +204,200 @@ Ext.define('TSUtilities',{
     }
 });
 /**
+ *
+ */
+Ext.define('Rally.techservices.ColorSettingsField', {
+    extend: 'Ext.form.field.Base',
+    alias: 'widget.colorsettingsfield',
+    plugins: ['rallyfieldvalidationui'],
+
+    fieldSubTpl: '<div id="{id}" class="settings-grid"></div>',
+
+    width: 600,
+    cls: 'column-settings',
+
+    config: {
+        /**
+         * @cfg {Object}
+         *
+         * The column settings value for this field
+         */
+        value: undefined
+    },
+
+    onDestroy: function() {
+        if (this._grid) {
+            this._grid.destroy();
+            delete this._grid;
+        }
+        this.callParent(arguments);
+    },
+
+    onRender: function() {
+        this.callParent(arguments);
+
+        this._store = Ext.create('Ext.data.Store', {
+            fields: ['state', 'colorStateMapping'],
+            data: []
+        });
+
+        this._grid = Ext.create('Rally.ui.grid.Grid', {
+            autoWidth: true,
+            renderTo: this.inputEl,
+            columnCfgs: this._getColumnCfgs(),
+            showPagingToolbar: false,
+            showRowActionsColumn: false,
+            enableRanking: false,
+            store: this._store,
+            editingConfig: {
+                publishMessages: false
+            }
+        });
+        
+        this._getStateField();
+    },
+    
+    _getStateField: function() {
+        var me = this;
+        config = {
+            model: 'TypeDefinition', 
+            fetch: ["TypePath"],
+            filters: [ { property:"Ordinal", operator:"=", value:0} ]
+        };
+        
+        TSUtilities.loadWSAPIItems(config).then({
+            scope: this,
+            success: function(types) {
+                var type = types[0];
+                var type_path = type.get('TypePath');
+                
+                Rally.data.ModelFactory.getModel({
+                    type: type_path,
+                    success: function(model) {
+                        var field = model.getField('State');
+                        me.refreshWithNewField(field);
+                    }
+                });
+
+            },
+            failure: function(msg) {
+                alert("Problem loading PI type: " + msg);
+            }
+        });
+    },
+
+    _getColumnCfgs: function() {
+        var columns = [
+            {
+                text: 'State',
+                dataIndex: 'state',
+                emptyCellText: 'None',
+                flex: 1
+            },
+            {
+                text: 'Color',
+                dataIndex: 'colorStateMapping',
+                editor: {
+                    xtype: 'rallytextfield',
+                    flex: 1
+//                    validator: function (value) {
+//                        return (value === '' || (value > 0 && value <= 9999)) || 'WIP must be > 0 and < 9999.';
+//                    },
+//                    rawToValue: function (value) {
+//                        return value === '' ? value : parseInt(value, 10);
+//                    }
+                }
+            }
+        ];
+
+        return columns;
+    },
+
+    /**
+     * When a form asks for the data this field represents,
+     * give it the name of this field and the ref of the selected project (or an empty string).
+     * Used when persisting the value of this field.
+     * @return {Object}
+     */
+    getSubmitData: function() {
+        var data = {};
+        data[this.name] = Ext.JSON.encode( this._buildSettingValue() );
+        return data;
+    },
+
+    _buildSettingValue: function() {
+        var columns = {};
+        this._store.each(function(record) {
+            columns[record.get('state')] = record.get('colorStateMapping');
+        }, this);
+        return columns;
+    },
+
+    getErrors: function() {
+        var errors = [];
+        if (this._storeLoaded && !Ext.Object.getSize(this._buildSettingValue())) {
+            errors.push('At least one column must be shown.');
+        }
+        return errors;
+    },
+
+    setValue: function(value) {
+        this.callParent(arguments);
+        this._value = value;
+    },
+
+    _getColumnValue: function(stateName) {
+        var value = this._value;
+        console.log("---", stateName, value);
+
+        if ( Ext.isEmpty(value) ) {
+            return null;
+        }
+        
+        if ( Ext.isString(value) ) {
+            value = Ext.JSON.decode(value);
+        }
+        
+        if ( Ext.isString(value)[stateName] ) {
+            return Ext.JSON.decode(value)[stateName];
+        }
+
+        return value[stateName];
+    },
+
+    refreshWithNewField: function(field) {
+        delete this._storeLoaded;
+        field.getAllowedValueStore().load({
+            callback: function(records, operation, success) {
+                var data = Ext.Array.map(records, this._recordToGridRow, this);
+                
+                this._store.loadRawData(data);
+                this.fireEvent('ready');
+                this._storeLoaded = true;
+            },
+            scope: this
+        });
+    },
+
+    _recordToGridRow: function(allowedValue) {
+        var stateName = allowedValue.get('StringValue');
+        var pref = this._store.getCount() === 0 ? this._getColumnValue(stateName) : null;
+
+        var column = { 
+            state: stateName,
+            colorStateMapping: ''
+        };
+        
+        if (pref) {
+            column.colorStateMapping = pref;
+        }
+
+        return column;
+
+    }
+});
+
+/**
  * A grid that shows a roadmap.  Each row is a Rally project, each 
  * column is a month.  
  * 
@@ -241,9 +435,15 @@ Ext.define('TSUtilities',{
          * @cfg {Rally.data.Model} (reqd)
          * The model of items to display 
          */
-        cardModel: null
+        cardModel: null,
+        /**
+         * 
+         * @cfg {object} 
+         *     { state1: 'Platinum', state2: 'blue', default: 'Platinum' } 
+         */
+        stateColors: { 'defaultValue': 'Platinum' }
     },
-
+    
     /**
      * @constructor
      * @param {Object} config
@@ -311,6 +511,8 @@ Ext.define('TSUtilities',{
     },
 
     _defineCustomModel: function(columns) {
+        var me = this;
+        
         var fields = Ext.Array.map(columns, function(column){
             var name = column.dataIndex;
             var type = 'object';
@@ -339,15 +541,15 @@ Ext.define('TSUtilities',{
     
     cardTemplate: new Ext.XTemplate(
         "<tpl for='.'>",
-            "<div class='ts_card'>{Name}</div>",
+            "<div class='ts_card' style='background-color:{__StateColor};'>{Name}</div>",
         "</tpl>"
     ),
-
     
     getCellRenderer: function() {
         var me = this;
         return function(value, meta, record) {
-           return me.cardTemplate.apply(value);
+            var card_items = me._setArtifactColor(value);
+            return me.cardTemplate.apply(card_items);
         }
     },
     
@@ -386,7 +588,7 @@ Ext.define('TSUtilities',{
             var oid = milestone.get('ObjectID');
             var target_date = milestone.get('TargetDate');
             
-            promises.push( function() { return me._loadMilestoneItems(oid,target_date); } );
+            promises.push( function() { return me._loadArtifactsForMilestone(oid,target_date); } );
         });
         
         Deft.Chain.sequence(promises).then({
@@ -429,20 +631,39 @@ Ext.define('TSUtilities',{
         return rows_by_project_oid;
     },
     
-    
-    _loadMilestoneItems: function(milestone_oid, milestone_date) {
-        var deferred = Ext.create('Deft.Deferred');
+    _setArtifactColor: function(artifacts) {
+        var artifacts_with_color = [];
+        Ext.Array.each(artifacts, function(artifact){
+            if ( ! Ext.isEmpty(artifact) ) {
+                var color = this.stateColors.defaultValue || 'Platinum';
+                
+                if ( artifact.State ) {
+                    color = this.stateColors[artifact.State.Name] || this.stateColors.defaultValue || 'Platinum';
+                } else {
+                    color = this.stateColors[""] || this.stateColors.defaultValue || 'Platinum';
+                }
+                
+                artifact.__StateColor = color;
+                artifacts_with_color.push(artifact);
+            }
+        },this);
         
-        console.log("Loading ", this.cardModel, " with milestone date of ", milestone_date);
+        return artifacts_with_color;
+    },
+    
+    _loadArtifactsForMilestone: function(milestone_oid, milestone_date) {
+        var deferred = Ext.create('Deft.Deferred');
         
         var config = {
             model: this.cardModel,
-            fetch: ['FormattedID', 'Name', 'ObjectID','Project'],
+            fetch: ['FormattedID', 'Name', 'ObjectID','Project','State'],
             filters: [{property:'Milestones.ObjectID', operator: 'contains', value: milestone_oid}]
         };
         
         TSUtilities.loadWSAPIItems(config).then({
+            scope: this,
             success: function(artifacts) {
+                
                 var artifacts_by_milestone = {};
                 artifacts_by_milestone[milestone_date] = artifacts;
                 deferred.resolve(artifacts_by_milestone);
@@ -463,10 +684,20 @@ Ext.define("TSMilestoneRoadmapApp", {
     componentCls: 'app',
     logger: new Rally.technicalservices.Logger(),
     defaults: { margin: 10 },
+    
+    config: {
+        defaultSettings: {
+            colorStateMapping: {
+                'defaultValue': 'Platinum',
+                'Discovering': 'cyan'
+            }
+        }
+    },
+    
     items: [
-        {xtype:'container',itemId:'display_box', minHeight: 500 }
+        {xtype:'container', itemId:'selector_box', minHeight: 50},
+        {xtype:'container', itemId: 'display_box'}
     ],
-
     // TODO
     integrationHeaders : {
         name : "TSMilestoneRoadmapApp"
@@ -476,7 +707,9 @@ Ext.define("TSMilestoneRoadmapApp", {
         var me = this;
         this.setLoading("Loading milestones...");
         
-        this._getLowestPITypeName().then({
+        if ( this.down('tsroadmaptable') ) { this.down('tsroadmaptable').destroy(); }
+        
+        this._getLowestPIType().then({
             scope  : this,
             success: function(types) {
                 this.setLoading('Loading items...');
@@ -485,11 +718,17 @@ Ext.define("TSMilestoneRoadmapApp", {
                 this.logger.log('PI Type:', this.PortfolioItemType);
                 
                 var start_date = Rally.util.DateTime.add(new Date(), 'month', -1);
+                var colors = this.getSetting('colorStateMapping');
+                
+                if ( Ext.isString(colors) ) { colors = Ext.JSON.decode(colors); }
+                
+                this.logger.log("Colors: ", colors);
                 
                 this.roadmap = this.down('#display_box').add({ 
                     xtype: 'tsroadmaptable',
                     startDate: start_date,
                     monthCount: 9,
+                    stateColors: colors,
                     cardModel: this.PortfolioItemType.get('TypePath'),
                     listeners: {
                         gridReady: function() {
@@ -516,8 +755,8 @@ Ext.define("TSMilestoneRoadmapApp", {
         };
     },
     
-    _getLowestPITypeName: function() {
-        config = {
+    _getLowestPIType: function() {
+        var config = {
             model: 'TypeDefinition', 
             fetch: ["TypePath"],
             filters: [ { property:"Ordinal", operator:"=", value:0} ]
@@ -556,8 +795,33 @@ Ext.define("TSMilestoneRoadmapApp", {
     //onSettingsUpdate:  Override
     onSettingsUpdate: function (settings){
         this.logger.log('onSettingsUpdate',settings);
-        // Ext.apply(this, settings);
+        
+        //Ext.apply(this, settings);
         this.launch();
+    },
+    
+    getSettingsFields: function() {
+        var me = this;
+        
+        return [
+        {
+            name: 'colorStateMapping',
+            readyEvent: 'ready',
+            fieldLabel: 'Colors by State',
+            margin: '5px 0 0 30px',
+            xtype: 'colorsettingsfield',
+            handlesEvents: {
+                fieldselected: function(field) {
+                    this.refreshWithNewField(field);
+                }
+            },
+            listeners: {
+                ready: function() {
+                    this.fireEvent('colorsettingsready');
+                }
+            },
+            bubbleEvents: 'colorsettingsready'
+        }];
     }
 });
 
@@ -573,12 +837,10 @@ Ext.define("TSMilestoneRoadmapApp", {
 div.ts_card {
     margin: 2px;
     padding: 2px;
-    background-color: #E5E4E2;
     text-align: center;
     font-size: 9px;
-    
-    border: 1px solid black;
-    box-shadow: 3px 3px grey;
+    border: 1px solid black !important;
+    box-shadow: 3px 3px grey !important;
 }
     </style>
 

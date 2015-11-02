@@ -3,10 +3,10 @@
 <head>
     <title>TS Milestone Roadmap</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Fri Oct 30 2015 15:09:13 GMT-0700 (PDT) -->
+    <!--  Build Date: Sun Nov 01 2015 19:19:27 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Fri Oct 30 2015 15:09:13 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Sun Nov 01 2015 19:19:27 GMT-0800 (PST)";
         var CHECKSUM = [%= checksum %];
     </script>
     
@@ -27,12 +27,10 @@
 div.ts_card {
     margin: 2px;
     padding: 2px;
-    background-color: #E5E4E2;
     text-align: center;
     font-size: 9px;
-    
-    border: 1px solid black;
-    box-shadow: 3px 3px grey;
+    border: 1px solid black !important;
+    box-shadow: 3px 3px grey !important;
 }
     </style>
 

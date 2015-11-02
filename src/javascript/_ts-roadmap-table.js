@@ -36,9 +36,15 @@
          * @cfg {Rally.data.Model} (reqd)
          * The model of items to display 
          */
-        cardModel: null
+        cardModel: null,
+        /**
+         * 
+         * @cfg {object} 
+         *     { state1: 'Platinum', state2: 'blue', default: 'Platinum' } 
+         */
+        stateColors: { 'defaultValue': 'Platinum' }
     },
-
+    
     /**
      * @constructor
      * @param {Object} config
@@ -106,6 +112,8 @@
     },
 
     _defineCustomModel: function(columns) {
+        var me = this;
+        
         var fields = Ext.Array.map(columns, function(column){
             var name = column.dataIndex;
             var type = 'object';
@@ -134,15 +142,15 @@
     
     cardTemplate: new Ext.XTemplate(
         "<tpl for='.'>",
-            "<div class='ts_card'>{Name}</div>",
+            "<div class='ts_card' style='background-color:{__StateColor};'>{Name}</div>",
         "</tpl>"
     ),
-
     
     getCellRenderer: function() {
         var me = this;
         return function(value, meta, record) {
-           return me.cardTemplate.apply(value);
+            var card_items = me._setArtifactColor(value);
+            return me.cardTemplate.apply(card_items);
         }
     },
     
@@ -181,7 +189,7 @@
             var oid = milestone.get('ObjectID');
             var target_date = milestone.get('TargetDate');
             
-            promises.push( function() { return me._loadMilestoneItems(oid,target_date); } );
+            promises.push( function() { return me._loadArtifactsForMilestone(oid,target_date); } );
         });
         
         Deft.Chain.sequence(promises).then({
@@ -224,20 +232,39 @@
         return rows_by_project_oid;
     },
     
-    
-    _loadMilestoneItems: function(milestone_oid, milestone_date) {
-        var deferred = Ext.create('Deft.Deferred');
+    _setArtifactColor: function(artifacts) {
+        var artifacts_with_color = [];
+        Ext.Array.each(artifacts, function(artifact){
+            if ( ! Ext.isEmpty(artifact) ) {
+                var color = this.stateColors.defaultValue || 'Platinum';
+                
+                if ( artifact.State ) {
+                    color = this.stateColors[artifact.State.Name] || this.stateColors.defaultValue || 'Platinum';
+                } else {
+                    color = this.stateColors[""] || this.stateColors.defaultValue || 'Platinum';
+                }
+                
+                artifact.__StateColor = color;
+                artifacts_with_color.push(artifact);
+            }
+        },this);
         
-        console.log("Loading ", this.cardModel, " with milestone date of ", milestone_date);
+        return artifacts_with_color;
+    },
+    
+    _loadArtifactsForMilestone: function(milestone_oid, milestone_date) {
+        var deferred = Ext.create('Deft.Deferred');
         
         var config = {
             model: this.cardModel,
-            fetch: ['FormattedID', 'Name', 'ObjectID','Project'],
+            fetch: ['FormattedID', 'Name', 'ObjectID','Project','State'],
             filters: [{property:'Milestones.ObjectID', operator: 'contains', value: milestone_oid}]
         };
         
         TSUtilities.loadWSAPIItems(config).then({
+            scope: this,
             success: function(artifacts) {
+                
                 var artifacts_by_milestone = {};
                 artifacts_by_milestone[milestone_date] = artifacts;
                 deferred.resolve(artifacts_by_milestone);
