@@ -11,13 +11,14 @@ Ext.define("TSMilestoneRoadmapApp", {
             colorStateMapping: {
                 'defaultValue': 'Platinum',
                 'Discovering': 'cyan'
-            }
+            },
+            projectGroups: {}
         }
     },
     
     items: [
         {xtype:'container', itemId:'selector_box', minHeight: 50},
-        {xtype:'container', itemId: 'display_box'}
+        {xtype:'container', itemId:'display_box'}
     ],
     // TODO
     integrationHeaders : {
@@ -40,16 +41,20 @@ Ext.define("TSMilestoneRoadmapApp", {
                 
                 var start_date = Rally.util.DateTime.add(new Date(), 'month', -1);
                 var colors = this.getSetting('colorStateMapping');
+                var project_groups = this.getSetting('projectGroups');
                 
                 if ( Ext.isString(colors) ) { colors = Ext.JSON.decode(colors); }
+                if ( Ext.isString(project_groups) ) { project_groups = Ext.JSON.decode(project_groups); }
                 
                 this.logger.log("Colors: ", colors);
+                this.logger.log("Project Groups: ", project_groups);
                 
                 this.roadmap = this.down('#display_box').add({ 
                     xtype: 'tsroadmaptable',
                     startDate: start_date,
                     monthCount: 9,
                     stateColors: colors,
+                    projectGroups: project_groups,
                     cardModel: this.PortfolioItemType.get('TypePath'),
                     listeners: {
                         gridReady: function() {
@@ -123,13 +128,25 @@ Ext.define("TSMilestoneRoadmapApp", {
     
     getSettingsFields: function() {
         var me = this;
+        var config = this.getSettings();
+        var current_project_groups = (config && config.projectGroups) || {};
         
-        return [
+        return [{
+            xtype: 'projectgroupsettings',
+            name: 'projectGroups',
+            fieldLabel: 'Projects to display (optionally make groups)',
+            labelAlign: 'left',
+            margin: 0,
+            value: current_project_groups,
+            readyEvent: 'ready'
+        },
         {
             name: 'colorStateMapping',
             readyEvent: 'ready',
             fieldLabel: 'Colors by State',
-            margin: '5px 0 0 30px',
+            width: this.getWidth() -10,
+            margin: 0,
+            height: 200,
             xtype: 'colorsettingsfield',
             handlesEvents: {
                 fieldselected: function(field) {

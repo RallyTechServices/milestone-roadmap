@@ -42,7 +42,13 @@
          * @cfg {object} 
          *     { state1: 'Platinum', state2: 'blue', default: 'Platinum' } 
          */
-        stateColors: { 'defaultValue': 'Platinum' }
+        stateColors: { 'defaultValue': 'Platinum' },
+        /**
+         * 
+         * @cfg {object}
+         *    { project_ref1: 'A', project_ref2: 'B', project_ref3: 'C', project_ref4: '' } 
+         */
+        projectGroups: {}
     },
     
     /**
@@ -194,20 +200,24 @@
         Deft.Chain.sequence(promises).then({
             scope: this,
             success: function(results) {
+                var me = this;
+                
                 var artifacts_by_milestone = {};
                 Ext.Array.each(results, function(artifacts_by_a_milestone){
                     artifacts_by_milestone = Ext.apply(artifacts_by_milestone, artifacts_by_a_milestone);
                 });
                 
-                var rows_by_project_oid = this._getRowsFromMilestoneHash(artifacts_by_milestone);
+                var rows_by_project_or_group_name = this._getRowsFromMilestoneHash(artifacts_by_milestone);
                 
                 Ext.Object.each( artifacts_by_milestone, function(milestone, artifacts) {
                     Ext.Array.each(artifacts, function(artifact){
-                        var project_oid = artifact.get('Project').ObjectID;
-                        rows_by_project_oid[project_oid].addArtifact(artifact,milestone);
+                        var key = me._getProjectGroupIdentifier(artifact.get('Project'));
+                        if ( key ) {
+                            rows_by_project_or_group_name[key].addArtifact(artifact,milestone);
+                        }
                     });
                 });
-                table_store.loadRecords(Ext.Object.getValues(rows_by_project_oid));
+                table_store.loadRecords(Ext.Object.getValues(rows_by_project_or_group_name));
                 this.fireEvent('gridReady', this, this.grid);
             },
             failure: function(msg) {
@@ -216,19 +226,41 @@
         });
     },
     
+    _getProjectGroupIdentifier: function(project) {
+        var project_group = this.projectGroups[ project._ref ];
+        if ( project_group) {
+            return project_group;
+        }
+        
+        if ( project_group == "" ) {
+            return project.Name;
+        }
+        
+        if ( Ext.isEmpty( this.projectGroups ) || Ext.Object.isEmpty(this.projectGroups) ) {
+            return project.Name;
+        }
+        
+        return false;
+    },
+    
     _getRowsFromMilestoneHash: function(artifacts_by_milestone) {
-        var rows_by_project_oid = {};
+        var rows_by_project_or_group_name = {};
+        var me = this;
         
         Ext.Object.each( artifacts_by_milestone, function(milestone, artifacts){
             Ext.Array.each(artifacts, function(artifact) {
-                var project_oid = artifact.get('Project').ObjectID;
-                rows_by_project_oid[project_oid] = Ext.create('TSTableRow',{
-                    Project: artifact.get('Project').Name
-                });
+                var key = me._getProjectGroupIdentifier(artifact.get('Project'));
+                                
+                if ( key ) {
+                    rows_by_project_or_group_name[key] = Ext.create('TSTableRow',{
+                        Project: key
+                    });
+                }
+                
             });
         });
         
-        return rows_by_project_oid;
+        return rows_by_project_or_group_name;
     },
     
     _setArtifactColor: function(artifacts) {
