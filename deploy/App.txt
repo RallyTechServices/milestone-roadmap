@@ -3,11 +3,11 @@
 <head>
     <title>TS Milestone Roadmap</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Mon Nov 09 2015 17:06:55 GMT-0800 (PST) -->
+    <!--  Build Date: Mon Nov 09 2015 17:10:54 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Nov 09 2015 17:06:55 GMT-0800 (PST)";
-        var CHECKSUM = 11775242791;
+        var APP_BUILD_DATE = "Mon Nov 09 2015 17:10:54 GMT-0800 (PST)";
+        var CHECKSUM = 11738828585;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -503,7 +503,7 @@ Ext.define('Rally.techservices.ColorSettingsField', {
                 if (successful){
                     this._updateRows(records, this.grid.getStore());
                 } else {
-                    console.log('Problem loading: ' + operation.error.errors.join('. '));
+                    console.error('Problem loading: ' + operation.error.errors.join('. '));
                     Ext.Msg.alert('Problem loading milestones', operation.error.errors.join('. '));
                 }
             }
@@ -526,7 +526,6 @@ Ext.define('Rally.techservices.ColorSettingsField', {
             fields: fields,
             
             addArtifact: function(artifact,milestone) {
-                console.log("Adding artifact: ", artifact, milestone, this);
                 var month = Ext.util.Format.date(milestone, 'F');
                 if ( Ext.isEmpty(this.get(month)) ) {
                     this.set(month, [artifact.getData()]);
@@ -541,7 +540,7 @@ Ext.define('Rally.techservices.ColorSettingsField', {
     
     cardTemplate: new Ext.XTemplate(
         "<tpl for='.'>",
-            "<div class='ts_card' style='background-color:{__StateColor};'>{Name}</div>",
+            "<div class='ts_card' style='background-color:{__StateColor};'>{Name} ({Children.Count})</div>",
         "</tpl>"
     ),
     
@@ -656,7 +655,7 @@ Ext.define('Rally.techservices.ColorSettingsField', {
         
         var config = {
             model: this.cardModel,
-            fetch: ['FormattedID', 'Name', 'ObjectID','Project','State'],
+            fetch: ['FormattedID', 'Name', 'ObjectID','Project','State','Children'],
             filters: [{property:'Milestones.ObjectID', operator: 'contains', value: milestone_oid}]
         };
         

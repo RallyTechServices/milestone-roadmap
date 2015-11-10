@@ -104,7 +104,7 @@
                 if (successful){
                     this._updateRows(records, this.grid.getStore());
                 } else {
-                    console.log('Problem loading: ' + operation.error.errors.join('. '));
+                    console.error('Problem loading: ' + operation.error.errors.join('. '));
                     Ext.Msg.alert('Problem loading milestones', operation.error.errors.join('. '));
                 }
             }
@@ -127,7 +127,6 @@
             fields: fields,
             
             addArtifact: function(artifact,milestone) {
-                console.log("Adding artifact: ", artifact, milestone, this);
                 var month = Ext.util.Format.date(milestone, 'F');
                 if ( Ext.isEmpty(this.get(month)) ) {
                     this.set(month, [artifact.getData()]);
@@ -142,7 +141,7 @@
     
     cardTemplate: new Ext.XTemplate(
         "<tpl for='.'>",
-            "<div class='ts_card' style='background-color:{__StateColor};'>{Name}</div>",
+            "<div class='ts_card' style='background-color:{__StateColor};'>{Name} ({Children.Count})</div>",
         "</tpl>"
     ),
     
@@ -257,7 +256,7 @@
         
         var config = {
             model: this.cardModel,
-            fetch: ['FormattedID', 'Name', 'ObjectID','Project','State'],
+            fetch: ['FormattedID', 'Name', 'ObjectID','Project','State','Children'],
             filters: [{property:'Milestones.ObjectID', operator: 'contains', value: milestone_oid}]
         };
         
