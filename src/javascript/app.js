@@ -28,7 +28,7 @@ Ext.define("TSMilestoneRoadmapApp", {
         
         if ( this.down('tsroadmaptable') ) { this.down('tsroadmaptable').destroy(); }
         
-        this._getLowestPIType().then({
+        this._getAppropriatePIType().then({
             scope  : this,
             success: function(types) {
                 this.setLoading('Loading items...');
@@ -74,11 +74,11 @@ Ext.define("TSMilestoneRoadmapApp", {
         };
     },
     
-    _getLowestPIType: function() {
+    _getAppropriatePIType: function() {
         var config = {
             model: 'TypeDefinition', 
             fetch: ["TypePath"],
-            filters: [ { property:"Ordinal", operator:"=", value:0} ]
+            filters: [ { property:"Ordinal", operator:"=", value:1} ]
         };
         
         return TSUtilities.loadWSAPIItems(config);

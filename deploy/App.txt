@@ -3,11 +3,11 @@
 <head>
     <title>TS Milestone Roadmap</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Sun Nov 01 2015 19:19:27 GMT-0800 (PST) -->
+    <!--  Build Date: Mon Nov 09 2015 17:06:55 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Sun Nov 01 2015 19:19:27 GMT-0800 (PST)";
-        var CHECKSUM = 11759299340;
+        var APP_BUILD_DATE = "Mon Nov 09 2015 17:06:55 GMT-0800 (PST)";
+        var CHECKSUM = 11775242791;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -709,7 +709,7 @@ Ext.define("TSMilestoneRoadmapApp", {
         
         if ( this.down('tsroadmaptable') ) { this.down('tsroadmaptable').destroy(); }
         
-        this._getLowestPIType().then({
+        this._getAppropriatePIType().then({
             scope  : this,
             success: function(types) {
                 this.setLoading('Loading items...');
@@ -755,11 +755,11 @@ Ext.define("TSMilestoneRoadmapApp", {
         };
     },
     
-    _getLowestPIType: function() {
+    _getAppropriatePIType: function() {
         var config = {
             model: 'TypeDefinition', 
             fetch: ["TypePath"],
-            filters: [ { property:"Ordinal", operator:"=", value:0} ]
+            filters: [ { property:"Ordinal", operator:"=", value:1} ]
         };
         
         return TSUtilities.loadWSAPIItems(config);
