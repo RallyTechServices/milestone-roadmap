@@ -3,11 +3,11 @@
 <head>
     <title>TS Milestone Roadmap</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Mon Nov 09 2015 20:04:39 GMT-0800 (PST) -->
+    <!--  Build Date: Mon Nov 09 2015 20:28:14 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Nov 09 2015 20:04:39 GMT-0800 (PST)";
-        var CHECKSUM = 42506264913;
+        var APP_BUILD_DATE = "Mon Nov 09 2015 20:28:14 GMT-0800 (PST)";
+        var CHECKSUM = 42754304160;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -679,6 +679,7 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
         this.callParent();
         this.addEvents('ready');
 
+        this.setLoading('loading...');
         var store = Ext.create('Rally.data.wsapi.Store', {
             model: 'Project',
             fetch: ['Name'],
@@ -695,6 +696,13 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
     },
 
     _buildProjectGrid: function(records, operation, success){
+        this.setLoading(false);
+        var container = Ext.create('Ext.container.Container',{
+            layout: { type:'hbox' },
+            renderTo: this.inputEl,
+            minHeight: 50,
+            minWidth: 50
+        });
         
         var decodedValue = {};
         if (this.initialConfig && this.initialConfig.value && !_.isEmpty(this.initialConfig.value)){
@@ -723,18 +731,12 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
             fields: ['projectRef', 'projectName', 'groupName'],
             data: data
         });
-
-        var container = Ext.create('Ext.container.Container',{
-            layout: { type:'hbox' },
-            renderTo: this.inputEl
-        });
         
         var gridWidth = Math.min(this.inputEl.getWidth(true)-100, 400);
         this.inputEl.set
         this._grid = container.add(  {
             xtype:'rallygrid',
             autoWidth: true,
-            //renderTo: container,
             columnCfgs: this._getColumnCfgs(),
             showPagingToolbar: false,
             store: custom_store,
@@ -752,7 +754,6 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
         container.add({
             xtype: 'rallybutton',
             text: 'Select Projects',
-            //renderTo: container,
             margin: '0 0 0 10',
             listeners: {
                 scope: this,
@@ -1173,7 +1174,11 @@ Ext.define('Rally.techservices.ColorSettingsField', {
             columnCfgs: columns,
             showPagingToolbar : false,
             showRowActionsColumn : false,
-            sortableColumns: false
+            sortableColumns: false,
+            disableSelection: true,
+            viewConfig: {
+                stripeRows: true
+            }
         });
         
         this._loadCards();

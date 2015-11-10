@@ -88,7 +88,11 @@
             columnCfgs: columns,
             showPagingToolbar : false,
             showRowActionsColumn : false,
-            sortableColumns: false
+            sortableColumns: false,
+            disableSelection: true,
+            viewConfig: {
+                stripeRows: true
+            }
         });
         
         this._loadCards();
