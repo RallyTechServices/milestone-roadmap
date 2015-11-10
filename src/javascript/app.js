@@ -4,6 +4,8 @@ Ext.define("TSMilestoneRoadmapApp", {
     logger: new Rally.technicalservices.Logger(),
     defaults: { margin: 10 },
     
+    settingsScope: 'project',
+
     config: {
         defaultSettings: {
             colorStateMapping: {

@@ -3,11 +3,11 @@
 <head>
     <title>TS Milestone Roadmap</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Mon Nov 09 2015 17:10:54 GMT-0800 (PST) -->
+    <!--  Build Date: Mon Nov 09 2015 17:22:47 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Nov 09 2015 17:10:54 GMT-0800 (PST)";
-        var CHECKSUM = 11738828585;
+        var APP_BUILD_DATE = "Mon Nov 09 2015 17:22:47 GMT-0800 (PST)";
+        var CHECKSUM = 11774633923;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -684,6 +684,8 @@ Ext.define("TSMilestoneRoadmapApp", {
     logger: new Rally.technicalservices.Logger(),
     defaults: { margin: 10 },
     
+    settingsScope: 'project',
+
     config: {
         defaultSettings: {
             colorStateMapping: {
