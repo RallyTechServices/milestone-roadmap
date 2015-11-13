@@ -151,7 +151,7 @@
     
     cardTemplate: new Ext.XTemplate(
         "<tpl for='.'>",
-            "<div class='ts_card' style='background-color:{__StateColor};'>{Name} ({Children.Count})</div>",
+            "<div class='ts_card' id='{ObjectID}' style='background-color:{__StateColor};'>{Name} ({Children.Count})</div>",
         "</tpl>"
     ),
     
@@ -211,6 +211,8 @@
                     artifacts_by_milestone = Ext.apply(artifacts_by_milestone, artifacts_by_a_milestone);
                 });
                 
+                this.artifacts_by_oid = this._getArtifactsByOIDFromMilestoneHash(artifacts_by_milestone);
+                
                 var rows_by_project_or_group_name = this._getRowsFromMilestoneHash(artifacts_by_milestone);
                 
                 Ext.Object.each( artifacts_by_milestone, function(milestone, artifacts) {
@@ -222,12 +224,34 @@
                     });
                 });
                 table_store.loadRecords(Ext.Object.getValues(rows_by_project_or_group_name));
+                this._setCardListeners();
                 this.fireEvent('gridReady', this, this.grid);
             },
             failure: function(msg) {
                 Ext.Msg.alert('Problem loading artifacts', msg);
             }
         });
+    },
+    
+    _getArtifactsByOIDFromMilestoneHash: function(artifacts_by_milestone){
+        var artifacts_by_oid = {};
+        Ext.Object.each(artifacts_by_milestone, function(key,artifacts) {
+            Ext.Array.each(artifacts, function(artifact){
+                artifacts_by_oid[artifact.get('ObjectID')] = artifact;
+            });
+        });
+        return artifacts_by_oid;
+    },
+    
+    _setCardListeners: function() {
+        var cards = Ext.query('.ts_card');
+        
+        Ext.Array.each(cards, function(card){
+            var card_element = Ext.get(card);
+            card_element.on('click', function(evt,c) {
+                this._showDialogForPI(c.id);
+            },this);
+        },this);
     },
     
     _getProjectGroupIdentifier: function(project) {
@@ -310,6 +334,38 @@
         });
 
         return deferred;
+    },
+    
+    _showDialogForPI: function(object_id) {
+        var artifact = this.artifacts_by_oid[object_id];
+        
+        Ext.create('Rally.ui.dialog.Dialog', {
+            id       : 'popup',
+            width    : Ext.getBody().getWidth() - 40,
+            height   : Ext.getBody().getHeight() - 40,
+            title    : artifact.get('Name'),
+            autoShow : true,
+            closable : true,
+            layout   : 'fit',
+            items    : [{
+                xtype                : 'rallygrid',
+                id                   : 'popupGrid',
+                showPagingToolbar    : false,
+                disableSelection     : true,
+                showRowActionsColumn : false,
+                columnCfgs           : [
+                    {dataIndex: 'FormattedID', text:'Feature' },
+                    {dataIndex: 'Name', text: 'Name' },
+                    {dataIndex: 'State', text: 'State' }
+                ],
+                storeConfig          : {
+                    pageSize: 10000,
+                    model: 'PortfolioItem', 
+                    filters: [{property:'Parent.ObjectID', value: object_id}]
+                }
+            }]
+        });
+        
     }
     
 
