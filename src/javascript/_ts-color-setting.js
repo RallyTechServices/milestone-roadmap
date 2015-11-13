@@ -59,7 +59,7 @@ Ext.define('Rally.techservices.ColorSettingsField', {
         config = {
             model: 'TypeDefinition', 
             fetch: ["TypePath"],
-            filters: [ { property:"Ordinal", operator:"=", value:0} ]
+            filters: [ { property:"Ordinal", operator:"=", value:1} ]
         };
         
         TSUtilities.loadWSAPIItems(config).then({
