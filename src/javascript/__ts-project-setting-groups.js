@@ -80,7 +80,8 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
                     if ( groupName || groupName == "" ) {
                         data.push({
                             projectRef: project.get('_ref'), 
-                            projectName: project.get('Name'), 
+                            projectName: project.get('Name'),
+                            Name: project.get('Name'),
                             groupName: groupName,
                             groupOrder: groupOrder
                         });
@@ -92,7 +93,7 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
         }
 
         var custom_store = Ext.create('Ext.data.Store', {
-            fields: ['projectRef', 'projectName', 'groupName','groupOrder'],
+            fields: ['projectRef', 'projectName', 'groupName','groupOrder','Name'],
             data: data
         });
         
@@ -141,6 +142,7 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
                                         new_data.push({
                                             projectRef: item.get('_ref'),
                                             projectName: item.get('Name'),
+                                            Name: item.get('Name'),
                                             groupName: null,
                                             groupOrder: 0
                                         });
@@ -286,6 +288,7 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
         store.each(function(record) {
             if (record.get('projectRef')) {
                 mappings[record.get('projectRef')] = {
+                    'Name': record.get('projectName') || "",
                     'groupName': record.get('groupName') || "",
                     'groupOrder': record.get('groupOrder') || -1
                 }

@@ -237,6 +237,8 @@
                     });
                 });
                 
+                rows_by_project_or_group_name = this._addRowsWithoutArtifacts(rows_by_project_or_group_name);
+                
                 Ext.Object.each(rows_by_project_or_group_name, function(key, row){
                     table_store.addSorted(row);
                 });
@@ -271,19 +273,41 @@
         },this);
     },
     
-    _getProjectGroupIdentifier: function(project) {
+    _addRowsWithoutArtifacts:function(rows_by_project_or_group_name){
+        var me = this;
+        
         if ( Ext.isEmpty(this.projectGroups) || this.projectGroups == {} ) {
+            return rows_by_project_or_group_name;
+        }
+        
+        Ext.Object.each(this.projectGroups, function(key, project_setting) {
+            if ( project_setting ) {
+                var key = project_setting.groupName || project_setting.Name;
+                var group_order = project_setting.groupOrder || -1;
+                
+                if ( key && Ext.isEmpty(rows_by_project_or_group_name[key] ) ) {
+                    rows_by_project_or_group_name[key] = Ext.create('TSTableRow',{
+                        Name: key,
+                        Project: key,
+                        groupOrder: group_order
+                    });
+                }
+            }
+        });
+        
+        return rows_by_project_or_group_name;
+    },
+ 
+    _getProjectGroupIdentifier: function(project) {
+
+        if ( this.projectGroups == {} || Ext.Object.getKeys(this.projectGroups).length === 0 ) {
             return project.Name;
         }
         
         var setting = this.projectGroups[ project._ref ];
-                
-        if ( setting && ! Ext.isEmpty( setting.groupName ) ) {
-            return setting.groupName;
-        } 
         
-        if ( setting && Ext.isEmpty( setting.groupName )) {
-            return project.Name;
+        if ( setting ) {
+            return setting.groupName || project.Name;
         }
 
         return false;
@@ -321,6 +345,7 @@
                 
             });
         });
+        
         
         return rows_by_project_or_group_name;
     },

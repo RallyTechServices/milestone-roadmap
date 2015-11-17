@@ -12,7 +12,7 @@ Ext.define("TSMilestoneRoadmapApp", {
                 'defaultValue': 'Platinum',
                 'Discovering': 'cyan'
             },
-            projectGroups: {}
+            projectGroupsWithOrder: {}
         }
     },
     
