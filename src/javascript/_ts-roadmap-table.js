@@ -46,7 +46,11 @@
         /**
          * 
          * @cfg {object}
-         *    { project_ref1: 'A', project_ref2: 'B', project_ref3: 'C', project_ref4: '' } 
+         *    { project_ref1: { 'groupName': 'A', 'groupOrder': 1 },
+         *      project_ref2: { 'groupName': 'B', 'groupOrder': 2 },
+         *      project_ref3: { 'groupName': 'A', 'groupOrder': 1 },
+         *      ...
+         *    } 
          */
         projectGroups: {}
     },
@@ -80,7 +84,10 @@
         var columns = this._getColumns();
         this._defineCustomModel(columns);
         
-        var table_store = Ext.create('Rally.data.custom.Store',{ model: 'TSTableRow' });
+        var table_store = Ext.create('Rally.data.custom.Store',{ 
+            model: 'TSTableRow',
+            sorters: [{property:'groupOrder', direction:'ASC'}]
+        });
         
         this.grid = this.add({ 
             xtype:'rallygrid', 
@@ -91,7 +98,11 @@
             sortableColumns: false,
             disableSelection: true,
             viewConfig: {
-                stripeRows: true
+                stripeRows: true,
+                plugins: {
+                    ptype: 'gridviewdragdrop',
+                    dragText: 'Drag and drop to reorder'
+                }
             }
         });
         
@@ -131,6 +142,8 @@
             
             return { name: name, type: type };
         });
+        
+        fields.push({ name: 'groupOrder', type:'Number' });
         
         Ext.define('TSTableRow', {
             extend: 'Ext.data.Model',
@@ -223,7 +236,11 @@
                         }
                     });
                 });
-                table_store.loadRecords(Ext.Object.getValues(rows_by_project_or_group_name));
+                
+                Ext.Object.each(rows_by_project_or_group_name, function(key, row){
+                    table_store.addSorted(row);
+                });
+                
                 this._setCardListeners();
                 this.fireEvent('gridReady', this, this.grid);
             },
@@ -255,20 +272,35 @@
     },
     
     _getProjectGroupIdentifier: function(project) {
-        var project_group = this.projectGroups[ project._ref ];
-        if ( project_group) {
-            return project_group;
-        }
-        
-        if ( project_group == "" ) {
+        if ( Ext.isEmpty(this.projectGroups) || this.projectGroups == {} ) {
             return project.Name;
         }
         
-        if ( Ext.isEmpty( this.projectGroups ) || Ext.Object.isEmpty(this.projectGroups) ) {
+        var setting = this.projectGroups[ project._ref ];
+                
+        if ( setting && ! Ext.isEmpty( setting.groupName ) ) {
+            return setting.groupName;
+        } 
+        
+        if ( setting && Ext.isEmpty( setting.groupName )) {
             return project.Name;
         }
-        
+
         return false;
+    },
+    
+    _getGroupOrder: function(project) {
+        if ( Ext.isEmpty(this.projectGroups) || this.projectGroups == {} ) {
+            return -1;
+        }
+        
+        var setting = this.projectGroups[ project._ref ];
+        
+        if ( setting && setting.groupOrder ) {
+            return setting.groupOrder;
+        }
+       
+        return -1;
     },
     
     _getRowsFromMilestoneHash: function(artifacts_by_milestone) {
@@ -278,10 +310,12 @@
         Ext.Object.each( artifacts_by_milestone, function(milestone, artifacts){
             Ext.Array.each(artifacts, function(artifact) {
                 var key = me._getProjectGroupIdentifier(artifact.get('Project'));
-                                
+                var group_order = me._getGroupOrder(artifact.get('Project'));
+                
                 if ( key ) {
                     rows_by_project_or_group_name[key] = Ext.create('TSTableRow',{
-                        Project: key
+                        Project: key,
+                        groupOrder: group_order
                     });
                 }
                 

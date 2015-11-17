@@ -7,6 +7,8 @@ column.
 
 ## Development Notes
 
+* Example of attaching a click event to an html fragment (for the popup)
+
 ### First Load
 
 If you've just downloaded this from github and you want to do development, 

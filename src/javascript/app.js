@@ -41,7 +41,7 @@ Ext.define("TSMilestoneRoadmapApp", {
                 
                 var start_date = Rally.util.DateTime.add(new Date(), 'month', -1);
                 var colors = this.getSetting('colorStateMapping');
-                var project_groups = this.getSetting('projectGroups');
+                var project_groups = this.getSetting('projectGroupsWithOrder');
                 
                 if ( Ext.isString(colors) ) { colors = Ext.JSON.decode(colors); }
                 if ( Ext.isString(project_groups) ) { project_groups = Ext.JSON.decode(project_groups); }
@@ -129,11 +129,11 @@ Ext.define("TSMilestoneRoadmapApp", {
     getSettingsFields: function() {
         var me = this;
         var config = this.getSettings();
-        var current_project_groups = (config && config.projectGroups) || {};
+        var current_project_groups = (config && config.projectGroupsWithOrder) || {};
         
         return [{
             xtype: 'projectgroupsettings',
-            name: 'projectGroups',
+            name: 'projectGroupsWithOrder',
             fieldLabel: 'Projects to display (optionally make groups)',
             labelAlign: 'left',
             margin: 0,

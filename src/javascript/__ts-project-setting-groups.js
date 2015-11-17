@@ -14,6 +14,7 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
         }
         this.callParent(arguments);
     },
+    
     initComponent: function(){
 
         this.callParent();
@@ -23,6 +24,7 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
         var store = Ext.create('Rally.data.wsapi.Store', {
             model: 'Project',
             fetch: ['Name'],
+            //filters: [{property:'ObjectID', value: -1 }],
             context: {
                 project: null
             },
@@ -35,6 +37,11 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
 
     },
 
+    onRender: function() {
+        this.callParent(arguments);
+        this.setLoading('Loading projects...');
+    },
+        
     _buildProjectGrid: function(records, operation, success){
         this.setLoading(false);
         var container = Ext.create('Ext.container.Container',{
@@ -45,6 +52,8 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
         });
         
         var decodedValue = {};
+        
+        
         if (this.initialConfig && this.initialConfig.value && !_.isEmpty(this.initialConfig.value)){
             if (!Ext.isObject(this.initialConfig.value)){
                 decodedValue = Ext.JSON.decode(this.initialConfig.value);
@@ -52,15 +61,30 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
                 decodedValue = this.initialConfig.value;
             }
         }
+       
+        
 
         var data = [],
-            empty_text = "No exceptions";
+            empty_text = "No selections";
 
-        if (success) {
+        console.log('initial config', this._value, this.initialConfig, decodedValue);
+            
+        if (success && decodedValue !== {} ) {
             _.each(records, function(project){
-                var groupName = decodedValue[project.get('_ref')];
-                if ( groupName || groupName == "" ) {
-                    data.push({projectRef: project.get('_ref'), projectName: project.get('Name'), groupName: groupName});
+                var setting = decodedValue[project.get('_ref')];
+                var groupName = "";
+                var groupOrder = "";
+                if ( setting && setting !== {} ) {
+                    groupName = setting.groupName;
+                    groupOrder = setting.groupOrder;
+                    if ( groupName || groupName == "" ) {
+                        data.push({
+                            projectRef: project.get('_ref'), 
+                            projectName: project.get('Name'), 
+                            groupName: groupName,
+                            groupOrder: groupOrder
+                        });
+                    }
                 }
             });
         } else {
@@ -68,7 +92,7 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
         }
 
         var custom_store = Ext.create('Ext.data.Store', {
-            fields: ['projectRef', 'projectName', 'groupName'],
+            fields: ['projectRef', 'projectName', 'groupName','groupOrder'],
             data: data
         });
         
@@ -117,7 +141,8 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
                                         new_data.push({
                                             projectRef: item.get('_ref'),
                                             projectName: item.get('Name'),
-                                            groupName: null
+                                            groupName: null,
+                                            groupOrder: 0
                                         });
                                     }
                                 });
@@ -149,25 +174,98 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
             _renderGearIcon: function(value, metaData, record) {
                 return '<div class="row-action-icon icon-gear"/>';
             }
-        },{
-                text: 'Project',
-                dataIndex: 'projectRef',
-                flex: 1,
-                editor: false,
-                renderer: function(v, m, r){
-                    return r.get('projectName');
-                },
-                getSortParam: function(v,m,r){
-                    return 'projectName';
-                }
-        },{
+        },
+        {
+            text: 'Project',
+            dataIndex: 'projectRef',
+            flex: 1,
+            editor: false,
+            renderer: function(v, m, r){
+                return r.get('projectName');
+            },
+            getSortParam: function(v,m,r){
+                return 'projectName';
+            }
+        },
+        {
             text: 'Group Name',
             dataIndex: 'groupName',
             editor: {
-                xtype: 'rallytextfield'
+                xtype: 'rallytextfield',
+                listeners: {
+                    scope: me,
+                    change: this._updateGroupOrderWhenNameChanges
+                }
+            }
+        },
+        {
+            text: 'Display Order',
+            dataIndex: 'groupOrder',
+            editor: {
+                xtype: 'rallynumberfield',
+                listeners: {
+                    scope: me,
+                    change: this._updateGroupOrders
+                }
             }
         }];
         return columns;
+    },
+    
+    _updateGroupOrderWhenNameChanges: function(field, new_value, old_value, opts) {
+        var grid = this._grid;
+        var changed_records = grid.getSelectionModel().getSelection();
+        var record_group_name = new_value;
+        
+        if ( !Ext.isEmpty(record_group_name) ) {
+            var group_order = -1;
+            grid.getStore().each(function(record) {
+                if ( record.get('groupName') == record_group_name && record.get('projectRef') != changed_records[0].get('projectRef')) {
+                    changed_records[0].set('groupOrder', record.get('groupOrder'));
+                }
+            });
+        }
+    },
+    
+    _updateGroupOrders: function(field, new_value, old_value, opts) {
+        var grid = this._grid;
+        var changed_records = grid.getSelectionModel().getSelection();
+        var record_group_name = changed_records[0].get('groupName');
+        
+        if ( !Ext.isEmpty(record_group_name) && Ext.isNumber(new_value) ) {
+            grid.getStore().each(function(record) {
+                if ( record.get('groupName') == record_group_name ) {
+                    record.set('groupOrder', new_value);
+                }
+            });
+        }
+        // shift all the ones that were at the number up one level
+        if ( Ext.isNumber(new_value) ) {
+            
+            // are there any that need to be shifted?
+            if ( this._shouldShiftOrders(grid.getStore(), new_value, record_group_name) ) {
+
+                grid.getStore().each(function(record) {
+                    var record_order =  record.get('groupOrder');
+                    
+                    if ( record_order >= new_value && record.get('groupName') != record_group_name ) {
+                        record.set('groupOrder', record_order + 1);
+                    }
+                });
+            }
+        }
+    },
+    
+    _shouldShiftOrders: function(store, new_value, record_group_name) {
+        var should_shift = false;
+        store.each(function(record) {
+            var group_name = record.get('groupName');
+            if ( record.get('groupOrder') == new_value && group_name !== record_group_name && !Ext.isEmpty(group_name)) {
+                should_shift = true;
+            }
+        });
+        
+        return should_shift;
     },
     /**
      * When a form asks for the data this field represents,
@@ -180,13 +278,17 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
         data[this.name] = Ext.JSON.encode(this._buildSettingValue());
         return data;
     },
+    
     _buildSettingValue: function() {
         var mappings = {};
         var store = this._grid.getStore();
 
         store.each(function(record) {
             if (record.get('projectRef')) {
-                mappings[record.get('projectRef')] = record.get('groupName') || "";
+                mappings[record.get('projectRef')] = {
+                    'groupName': record.get('groupName') || "",
+                    'groupOrder': record.get('groupOrder') || -1
+                }
             }
         }, this);
         return mappings;
@@ -198,6 +300,7 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
         return errors;
     },
     setValue: function(value) {
+        console.log('setValue', value);
         this.callParent(arguments);
         this._value = value;
     }
