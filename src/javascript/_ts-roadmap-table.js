@@ -225,7 +225,7 @@
             });
         });
         
-        Deft.Chain.sequence(promises).then({
+        Deft.Chain.parallel(promises).then({
             scope: this,
             success: function(results) {
                 var me = this;

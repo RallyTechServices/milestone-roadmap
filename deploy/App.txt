@@ -3,11 +3,11 @@
 <head>
     <title>TS Milestone Roadmap</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Tue Nov 17 2015 18:19:25 GMT-0800 (PST) -->
+    <!--  Build Date: Tue Nov 17 2015 18:24:25 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Nov 17 2015 18:19:25 GMT-0800 (PST)";
-        var CHECKSUM = 64391029444;
+        var APP_BUILD_DATE = "Tue Nov 17 2015 18:24:25 GMT-0800 (PST)";
+        var CHECKSUM = 64390691427;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -1478,7 +1478,7 @@ Ext.define('Rally.techservices.ColorSettingsField', {
             });
         });
         
-        Deft.Chain.sequence(promises).then({
+        Deft.Chain.parallel(promises).then({
             scope: this,
             success: function(results) {
                 var me = this;
