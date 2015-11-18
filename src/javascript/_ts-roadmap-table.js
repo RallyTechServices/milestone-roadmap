@@ -209,11 +209,20 @@
         var me = this;
         var promises = [];
         
+        var milestone_dates_by_oid = {};
+        Ext.Array.each(milestones, function(milestone) {
+            milestone_dates_by_oid[milestone.get('ObjectID')] = milestone.get('TargetDate');
+        });
+        
+        //promises.push(function() { return me._loadArtifactsForMilestones(milestone_dates_by_oid); });
+        
         Ext.Array.each(milestones, function(milestone){
             var oid = milestone.get('ObjectID');
             var target_date = milestone.get('TargetDate');
             
-            promises.push( function() { return me._loadArtifactsForMilestone(oid,target_date); } );
+            promises.push( function() { 
+                return me._loadArtifactsForMilestone(oid,target_date); 
+            });
         });
         
         Deft.Chain.sequence(promises).then({
@@ -374,10 +383,12 @@
                     }
                 } else {
                     var value = this.stateColors[""];
-                    if ( Ext.isString(value) && !Ext.isEmpty(value) ) {
-                        color = value;
-                    } else if ( value.colorStateMapping ) {
-                        color = value.colorStateMapping;
+                    if ( !Ext.isEmpty(value) ) { 
+                        if ( Ext.isString(value) ) {
+                            color = value;
+                        } else if ( !Ext.isEmpty( value.colorStateMapping)  ) {
+                            color = value.colorStateMapping;
+                        }
                     }
                 }
                 
@@ -393,8 +404,8 @@
         var deferred = Ext.create('Deft.Deferred');
         
         var config = {
-            model: this.cardModel,
-            fetch: ['FormattedID', 'Name', 'ObjectID','Project','State','Children'],
+            model:   this.cardModel,
+            fetch:   ['FormattedID', 'Name', 'ObjectID','Project','State','Children'],
             filters: [{property:'Milestones.ObjectID', operator: 'contains', value: milestone_oid}]
         };
         
