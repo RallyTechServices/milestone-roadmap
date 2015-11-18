@@ -448,7 +448,8 @@
                     {dataIndex: 'Name', text: 'Name' },
                     {dataIndex: 'State', text: 'State' },
                     {dataIndex: 'PlannedStartDate', text: 'Planned Start' },
-                    {dataIndex: 'PlannedEndDate', text: 'Planned End' }
+                    {dataIndex: 'PlannedEndDate', text: 'Planned End' },
+                    {dataIndex: 'LeafStoryCount', text:'Leaf Story Count'}
                 ],
                 storeConfig          : {
                     pageSize: 10000,
