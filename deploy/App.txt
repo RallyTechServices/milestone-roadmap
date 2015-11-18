@@ -3,11 +3,11 @@
 <head>
     <title>TS Milestone Roadmap</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Tue Nov 17 2015 18:24:25 GMT-0800 (PST) -->
+    <!--  Build Date: Tue Nov 17 2015 19:25:51 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Nov 17 2015 18:24:25 GMT-0800 (PST)";
-        var CHECKSUM = 64390691427;
+        var APP_BUILD_DATE = "Tue Nov 17 2015 19:25:51 GMT-0800 (PST)";
+        var CHECKSUM = 64796483022;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -1695,10 +1695,13 @@ Ext.define('Rally.techservices.ColorSettingsField', {
                 showPagingToolbar    : false,
                 disableSelection     : true,
                 showRowActionsColumn : false,
+                enableEditing        : false,
                 columnCfgs           : [
                     {dataIndex: 'FormattedID', text:'Feature' },
                     {dataIndex: 'Name', text: 'Name' },
-                    {dataIndex: 'State', text: 'State' }
+                    {dataIndex: 'State', text: 'State' },
+                    {dataIndex: 'PlannedStartDate', text: 'Planned Start' },
+                    {dataIndex: 'PlannedEndDate', text: 'Planned End' }
                 ],
                 storeConfig          : {
                     pageSize: 10000,

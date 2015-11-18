@@ -442,10 +442,13 @@
                 showPagingToolbar    : false,
                 disableSelection     : true,
                 showRowActionsColumn : false,
+                enableEditing        : false,
                 columnCfgs           : [
                     {dataIndex: 'FormattedID', text:'Feature' },
                     {dataIndex: 'Name', text: 'Name' },
-                    {dataIndex: 'State', text: 'State' }
+                    {dataIndex: 'State', text: 'State' },
+                    {dataIndex: 'PlannedStartDate', text: 'Planned Start' },
+                    {dataIndex: 'PlannedEndDate', text: 'Planned End' }
                 ],
                 storeConfig          : {
                     pageSize: 10000,
