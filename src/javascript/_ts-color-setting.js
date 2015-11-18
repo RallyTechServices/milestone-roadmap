@@ -31,7 +31,7 @@ Ext.define('Rally.techservices.ColorSettingsField', {
         this.callParent(arguments);
 
         this._store = Ext.create('Ext.data.Store', {
-            fields: ['state', 'colorStateMapping'],
+            fields: ['state', 'groupName', 'colorStateMapping'],
             data: []
         });
 
@@ -84,6 +84,7 @@ Ext.define('Rally.techservices.ColorSettingsField', {
     },
 
     _getColumnCfgs: function() {
+        var me = this;
         var columns = [
             {
                 text: 'State',
@@ -92,11 +93,26 @@ Ext.define('Rally.techservices.ColorSettingsField', {
                 flex: 1
             },
             {
+                text: 'State Group',
+                dataIndex: 'groupName',
+                editor: {
+                    xtype:'rallytextfield',
+                    listeners: {
+                        scope: me,
+                        change: me._updateMyGroupColor
+                    }
+                }
+            },
+            {
                 text: 'Color',
                 dataIndex: 'colorStateMapping',
                 editor: {
                     xtype: 'rallytextfield',
-                    flex: 1
+                    flex: 1,
+                    listeners: {
+                        scope: me,
+                        change: me._updateOtherGroupColors
+                    }
 //                    validator: function (value) {
 //                        return (value === '' || (value > 0 && value <= 9999)) || 'WIP must be > 0 and < 9999.';
 //                    },
@@ -110,6 +126,42 @@ Ext.define('Rally.techservices.ColorSettingsField', {
         return columns;
     },
 
+    _updateMyGroupColor: function(field, new_value, old_value, opts) {
+        var grid = this._grid;
+        var changed_records = grid.getSelectionModel().getSelection();
+        var record_group_name = new_value;
+        
+        if ( !Ext.isEmpty(record_group_name) ) {
+            grid.getStore().each(function(record) {
+                var group = record.get('groupName');
+                var color = record.get('colorStateMapping');
+                
+                if ( group == record_group_name && !Ext.isEmpty(color) ) {
+                    changed_records[0].set('colorStateMapping', color);
+                }
+            });
+        }
+    },
+
+    _updateOtherGroupColors: function(field, new_value, old_value, opts) {
+        var grid = this._grid;
+        var changed_records = grid.getSelectionModel().getSelection();
+        var record_group_name = changed_records[0].get('groupName');;
+        var record_color = new_value;
+        var record_state = changed_records[0].get('state');
+                
+        if ( !Ext.isEmpty(record_group_name) ) {
+            grid.getStore().each(function(record) {
+                var group = record.get('groupName');
+                var color = record.get('colorStateMapping');
+                var state = record.get('state');
+                
+                if ( group == record_group_name && state != record_state ) {
+                    record.set('colorStateMapping', record_color);
+                }
+            });
+        }
+    },
     /**
      * When a form asks for the data this field represents,
      * give it the name of this field and the ref of the selected project (or an empty string).
@@ -125,7 +177,10 @@ Ext.define('Rally.techservices.ColorSettingsField', {
     _buildSettingValue: function() {
         var columns = {};
         this._store.each(function(record) {
-            columns[record.get('state')] = record.get('colorStateMapping');
+            columns[record.get('state')] = {
+                'colorStateMapping': record.get('colorStateMapping'),
+                'groupName': record.get('groupName')
+            };
         }, this);
         return columns;
     },
@@ -143,7 +198,7 @@ Ext.define('Rally.techservices.ColorSettingsField', {
         this._value = value;
     },
 
-    _getColumnValue: function(stateName) {
+    _getColumnValue: function(columnName) {
         var value = this._value;
 
         if ( Ext.isEmpty(value) ) {
@@ -154,11 +209,11 @@ Ext.define('Rally.techservices.ColorSettingsField', {
             value = Ext.JSON.decode(value);
         }
         
-        if ( Ext.isString(value)[stateName] ) {
-            return Ext.JSON.decode(value)[stateName];
+        if ( Ext.isString(value)[columnName] ) {
+            return Ext.JSON.decode(value)[columnName];
         }
 
-        return value[stateName];
+        return value[columnName];
     },
 
     refreshWithNewField: function(field) {
@@ -181,11 +236,17 @@ Ext.define('Rally.techservices.ColorSettingsField', {
 
         var column = { 
             state: stateName,
-            colorStateMapping: ''
+            colorStateMapping: '',
+            groupName: ''
         };
         
         if (pref) {
-            column.colorStateMapping = pref;
+            if ( Ext.isString(pref) ) {
+                column.colorStateMapping = pref;
+            } else {
+                column.colorStateMapping = pref.colorStateMapping;
+                column.groupName = pref.groupName;
+            }
         }
 
         return column;

@@ -42,7 +42,9 @@
          * @cfg {object} 
          *     { state1: 'Platinum', state2: 'blue', default: 'Platinum' } 
          */
-        stateColors: { 'defaultValue': 'Platinum' },
+        stateColors: {
+            'defaultValue': { 'colorStateMapping': 'cyan', 'groupName': 'none' }
+        },
         /**
          * 
          * @cfg {object}
@@ -354,12 +356,29 @@
         var artifacts_with_color = [];
         Ext.Array.each(artifacts, function(artifact){
             if ( ! Ext.isEmpty(artifact) ) {
-                var color = this.stateColors.defaultValue || 'Platinum';
+                var default_value = this.stateColors.defaultValue;
+                if ( default_value.colorStateMapping ) { 
+                    default_value = default_value.colorStateMapping;
+                }
+                var color = default_value || 'Platinum';
                 
                 if ( artifact.State ) {
-                    color = this.stateColors[artifact.State.Name] || this.stateColors.defaultValue || 'Platinum';
+                    var value = this.stateColors[artifact.State.Name];
+                    
+                    if ( !Ext.isEmpty(value) ) { 
+                        if ( Ext.isString(value) ) {
+                            color = value;
+                        } else if ( !Ext.isEmpty( value.colorStateMapping)  ) {
+                            color = value.colorStateMapping;
+                        }
+                    }
                 } else {
-                    color = this.stateColors[""] || this.stateColors.defaultValue || 'Platinum';
+                    var value = this.stateColors[""];
+                    if ( Ext.isString(value) && !Ext.isEmpty(value) ) {
+                        color = value;
+                    } else if ( value.colorStateMapping ) {
+                        color = value.colorStateMapping;
+                    }
                 }
                 
                 artifact.__StateColor = color;

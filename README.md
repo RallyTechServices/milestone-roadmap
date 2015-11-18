@@ -1,13 +1,16 @@
 #TS Milestone Roadmap
 
 An app to show a formatted roadmap with columns representing months and
-rows representing Rally projects.  Inside each cell are lowest level PIs
+rows representing Rally projects.  Inside each cell are second-to-lowest PIs
 that are associated with the project and a milestone in the month of the
 column.
 
 ## Development Notes
 
 * Example of attaching a click event to an html fragment (for the popup)
+* Example of multiple values in a setting table that interact (color and group, 
+project group name and order)
+
 
 ### First Load
 

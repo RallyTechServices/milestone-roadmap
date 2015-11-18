@@ -9,8 +9,8 @@ Ext.define("TSMilestoneRoadmapApp", {
     config: {
         defaultSettings: {
             colorStateMapping: {
-                'defaultValue': 'Platinum',
-                'Discovering': 'cyan'
+                'defaultValue': { 'colorStateMapping': 'Platinum', 'groupName': 'test' },
+                'Discovering':  { 'colorStateMapping': 'Platinum', 'groupName': 'test' }
             },
             projectGroupsWithOrder: {}
         }
