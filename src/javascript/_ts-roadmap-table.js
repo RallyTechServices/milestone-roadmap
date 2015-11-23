@@ -427,7 +427,7 @@
     
     _showDialogForPI: function(object_id) {
         var artifact = this.artifacts_by_oid[object_id];
-        
+        var me = this;
         Ext.create('Rally.ui.dialog.Dialog', {
             id       : 'popup',
             width    : Ext.getBody().getWidth() - 40,
@@ -449,16 +449,63 @@
                     {dataIndex: 'State', text: 'State' },
                     {dataIndex: 'PlannedStartDate', text: 'Planned Start' },
                     {dataIndex: 'PlannedEndDate', text: 'Planned End' },
-                    {dataIndex: 'LeafStoryCount', text:'Leaf Story Count'}
+                    {dataIndex: 'LeafStoryCount', text:'Leaf Story Count'},
+                    {dataIndex: 'Predecessors', text: 'Predecessors', renderer: me._renderPredecessors }
                 ],
                 storeConfig          : {
                     pageSize: 10000,
-                    model: 'PortfolioItem', 
+                    model: 'PortfolioItem/Feature', 
                     filters: [{property:'Parent.ObjectID', value: object_id}]
+                },
+                listeners: {
+                    scope: this,
+                    render: function(grid){
+                        var store = grid.getStore();
+                        var me = this;
+                        
+                        // put predecessor info on page
+                        store.on('load', function(store, records){
+                            Ext.Array.each( records, function(record) {
+                                var predecessor_object = record.get('Predecessors');
+                                if ( predecessor_object && predecessor_object.Count > 0 ) {
+                                    var id = predecessor_object._ref.replace(/[^a-z0-9]/g, '');
+                                    var spans = Ext.query('#'+id);
+                                    if ( spans.length > 0 ) {
+                                        record.getCollection('Predecessors').load({
+                                            fetch: ['FormattedID', 'ObjectID', 'Project'],
+                                            callback: function(records, operation, success) {
+                                                var display_array = Ext.Array.map(records, function(predecessor) {
+                                                    var url = Rally.nav.Manager.getDetailUrl(predecessor);
+                                                    return Ext.String.format("<span> <a href='{0}'>{1}</a> </span>",
+                                                        url,
+                                                        predecessor.get('FormattedID')
+                                                    );
+                                                        
+                                                });
+                                                
+                                                console.log(spans);
+                                                console.log('display_array', display_array.join(','));
+                                                spans[0].innerHTML = display_array.join(',');
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                        });
+                    }
                 }
             }]
         });
         
+    },
+    
+    _renderPredecessors: function(value,meta,record) {
+        if ( Ext.isEmpty(value) || value.Count === 0 ) {
+            return " ";
+        }
+        var id  = value._ref.replace(/[^a-z0-9]/g, '');
+        var html = "<span id='" + id + "'>" + value.Count + "</span>";
+        return html;
     }
     
 
