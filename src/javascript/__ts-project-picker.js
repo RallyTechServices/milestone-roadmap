@@ -3,8 +3,8 @@ Ext.define('ProjectPickerDialog', {
     alias: 'widget.projectpickerdialog',
 
 
-    height: 400,
-    width: 400,
+    height: 600,
+    width: 600,
     layout: 'fit',
     closable: true,
     draggable: true,

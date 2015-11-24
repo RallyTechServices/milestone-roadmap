@@ -3,10 +3,10 @@
 <head>
     <title>Integrated Planning Dashboard</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Mon Nov 23 2015 20:38:48 GMT-0800 (PST) -->
+    <!--  Build Date: Mon Nov 23 2015 20:44:32 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Nov 23 2015 20:38:48 GMT-0800 (PST)";
+        var APP_BUILD_DATE = "Mon Nov 23 2015 20:44:32 GMT-0800 (PST)";
         var CHECKSUM = [%= checksum %];
     </script>
     

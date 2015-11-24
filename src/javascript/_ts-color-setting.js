@@ -35,7 +35,7 @@ Ext.define('Rally.techservices.ColorSettingsField', {
             data: []
         });
 
-        var gridWidth = Math.min(this.getWidth(true)-100, 400);
+        var gridWidth = Math.min(this.getWidth(true)-100, 500);
 
         this._grid = Ext.create('Rally.ui.grid.Grid', {
             maxWidth: gridWidth,

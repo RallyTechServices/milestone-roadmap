@@ -97,7 +97,7 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
             data: data
         });
         
-        var gridWidth = Math.min(this.inputEl.getWidth(true)-100, 400);
+        var gridWidth = Math.min(this.inputEl.getWidth(true)-100, 500);
         this.inputEl.set
         this._grid = container.add(  {
             xtype:'rallygrid',
@@ -113,7 +113,7 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
             }
         });
 
-        var width = Math.min(this.inputEl.getWidth(true)-20, 400);
+        var width = Math.min(this.inputEl.getWidth(true)-20, 600);
         
         //Ext.create('Rally.ui.Button',{
         container.add({
@@ -127,8 +127,8 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
                     Ext.create('ProjectPickerDialog',{
                         autoShow: true,
                         maxHeight: 300,
-                        maxWidth: 400,
-                        width: Math.min(width, 400),
+                        maxWidth: 600,
+                        width: Math.min(width, 600),
                         title: 'Choose Project(s)',
                         selectedRefs: _.pluck(data, 'projectRef'),
                         listeners: {

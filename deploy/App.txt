@@ -3,11 +3,11 @@
 <head>
     <title>Integrated Planning Dashboard</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Mon Nov 23 2015 20:38:48 GMT-0800 (PST) -->
+    <!--  Build Date: Mon Nov 23 2015 20:44:32 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Nov 23 2015 20:38:48 GMT-0800 (PST)";
-        var CHECKSUM = 76563495760;
+        var APP_BUILD_DATE = "Mon Nov 23 2015 20:44:32 GMT-0800 (PST)";
+        var CHECKSUM = 76563626649;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -181,8 +181,8 @@ Ext.define('ProjectPickerDialog', {
     alias: 'widget.projectpickerdialog',
 
 
-    height: 400,
-    width: 400,
+    height: 600,
+    width: 600,
     layout: 'fit',
     closable: true,
     draggable: true,
@@ -757,7 +757,7 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
             data: data
         });
         
-        var gridWidth = Math.min(this.inputEl.getWidth(true)-100, 400);
+        var gridWidth = Math.min(this.inputEl.getWidth(true)-100, 500);
         this.inputEl.set
         this._grid = container.add(  {
             xtype:'rallygrid',
@@ -773,7 +773,7 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
             }
         });
 
-        var width = Math.min(this.inputEl.getWidth(true)-20, 400);
+        var width = Math.min(this.inputEl.getWidth(true)-20, 600);
         
         //Ext.create('Rally.ui.Button',{
         container.add({
@@ -787,8 +787,8 @@ Ext.define('TechnicalServices.ProjectSettingGroups',{
                     Ext.create('ProjectPickerDialog',{
                         autoShow: true,
                         maxHeight: 300,
-                        maxWidth: 400,
-                        width: Math.min(width, 400),
+                        maxWidth: 600,
+                        width: Math.min(width, 600),
                         title: 'Choose Project(s)',
                         selectedRefs: _.pluck(data, 'projectRef'),
                         listeners: {
@@ -1032,7 +1032,7 @@ Ext.define('Rally.techservices.ColorSettingsField', {
             data: []
         });
 
-        var gridWidth = Math.min(this.getWidth(true)-100, 400);
+        var gridWidth = Math.min(this.getWidth(true)-100, 500);
 
         this._grid = Ext.create('Rally.ui.grid.Grid', {
             maxWidth: gridWidth,
