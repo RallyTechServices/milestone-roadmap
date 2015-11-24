@@ -174,7 +174,6 @@
         "</tpl>",
         {
             getPredecessorSymbol:function(record) {
-                console.log('record', record);
                 if ( record.__ChildPredecessorCount && record.__ChildPredecessorCount > 0 ) {
                     return " <span class='icon-predecessor'> </span>";
                 }
@@ -228,11 +227,11 @@
         });
         
         Ext.Array.each(milestones, function(milestone){
-            var oid = milestone.get('ObjectID');
-            var target_date = milestone.get('TargetDate');
-            
+//            var oid = milestone.get('ObjectID');
+//            var target_date = milestone.get('TargetDate');
+//            
             promises.push( function() { 
-                return me._loadArtifactsForMilestone(oid,target_date); 
+                return me._loadArtifactsForMilestone(milestone); 
             });
         });
         
@@ -286,7 +285,6 @@
         var artifacts_by_oid = {};
         Ext.Object.each(artifacts_by_milestone, function(key,artifacts) {
             Ext.Array.each(artifacts, function(artifact){
-                console.log('artifact', artifact);
                 artifacts_by_oid[artifact.ObjectID] = artifact;
             });
         });
@@ -328,11 +326,7 @@
         
         return rows_by_project_or_group_name;
     },
- 
-    _convertRowArtifactsToHashes: function(rows_by_project_or_group_name) {
-        console.log('rows_by_project_or_group_name', rows_by_project_or_group_name);
-    },
-    
+
     _getProjectGroupIdentifier: function(project) {
 
         if ( this.projectGroups == {} || Ext.Object.getKeys(this.projectGroups).length === 0 ) {
@@ -424,9 +418,12 @@
         return artifacts_with_color;
     },
     
-    _loadArtifactsForMilestone: function(milestone_oid, milestone_date) {
+    _loadArtifactsForMilestone: function(milestone) {
         var deferred = Ext.create('Deft.Deferred');
         var me = this;
+        
+        var milestone_oid = milestone.get('ObjectID');
+        var milestone_date = milestone.get('TargetDate');
         
         var config = {
             model:   this.cardModel,
@@ -438,7 +435,12 @@
             scope: this,
             success: function(artifacts) {
                 var artifacts_by_milestone = {};
-                artifacts_by_milestone[milestone_date] = Ext.Array.map( artifacts, function(artifact) { return artifact.getData(); });
+                artifacts_by_milestone[milestone_date] = Ext.Array.map( artifacts, function(artifact) {
+                    var artifact_hash = artifact.getData();
+                    artifact_hash.__Milestone = milestone.getData();
+                    return artifact_hash; 
+                });
+                console.log('abm', artifacts_by_milestone);
                 deferred.resolve(artifacts_by_milestone);
             },
             failure: function(msg) {
@@ -470,7 +472,7 @@
         var config = {
             model: 'PortfolioItem/Feature',
             filters: Rally.data.wsapi.Filter.or(artifact_filter),
-            fetch: ['Predecessors','Parent','ObjectID']
+            fetch: ['Predecessors','Parent','ObjectID','Milestones']
         };
         
         TSUtilities.loadWSAPIItems(config).then({
@@ -487,7 +489,6 @@
                         var child_predecessor_count = child.get('Predecessors').Count;
                         var parent_predecessor_count = parent.__ChildPredecessorCount;
                         parent.__ChildPredecessorCount = parent_predecessor_count + child_predecessor_count;
-                        console.log('parent',parent);
                     }
                 });
                 deferred.resolve(artifacts_by_milestone);
@@ -503,11 +504,20 @@
     _showDialogForPI: function(object_id) {
         var artifact = this.artifacts_by_oid[object_id];
         var me = this;
+        
+        console.log('artifact', artifact);
+        
+        var title = Ext.String.format("{0} ({1} - {2})",
+            artifact.Name,
+            artifact.__Milestone.Name,
+            Ext.util.Format.date( artifact.__Milestone.TargetDate, 'm/d/Y' )
+        );
+        
         Ext.create('Rally.ui.dialog.Dialog', {
             id       : 'popup',
             width    : Ext.getBody().getWidth() - 40,
             height   : Ext.getBody().getHeight() - 40,
-            title    : artifact.Name,
+            title    : title ,
             autoShow : true,
             closable : true,
             layout   : 'fit',
@@ -541,30 +551,8 @@
                         // put predecessor info on page
                         store.on('load', function(store, records){
                             Ext.Array.each( records, function(record) {
-                                var predecessor_object = record.get('Predecessors');
-                                if ( predecessor_object && predecessor_object.Count > 0 ) {
-                                    var id = predecessor_object._ref.replace(/[^a-z0-9]/g, '');
-                                    var spans = Ext.query('#'+id);
-                                    if ( spans.length > 0 ) {
-                                        record.getCollection('Predecessors').load({
-                                            fetch: ['FormattedID', 'ObjectID', 'Project'],
-                                            callback: function(records, operation, success) {
-                                                var display_array = Ext.Array.map(records, function(predecessor) {
-                                                    var url = Rally.nav.Manager.getDetailUrl(predecessor);
-                                                    return Ext.String.format("<span> <a href='{0}'>{1}</a> </span>",
-                                                        url,
-                                                        predecessor.get('FormattedID')
-                                                    );
-                                                        
-                                                });
-                                                
-                                                console.log(spans);
-                                                console.log('display_array', display_array.join(','));
-                                                spans[0].innerHTML = display_array.join(',');
-                                            }
-                                        });
-                                    }
-                                }
+                                me._showPredecessorsInDialog(record);
+                                me._showMilestonesInDialog(record);
                             });
                         });
                     }
@@ -574,16 +562,71 @@
         
     },
     
-    
-    
     _renderPredecessors: function(value,meta,record) {
         if ( Ext.isEmpty(value) || value.Count === 0 ) {
             return " ";
         }
         var id  = value._ref.replace(/[^a-z0-9]/g, '');
-        var html = "<span id='" + id + "'>" + value.Count + "</span>";
+        var html = "<span id='P" + id + "'>" + value.Count + "</span>";
         return html;
-    }
+    },
     
+    _renderMilestones: function(value,meta,record) {
+        if ( Ext.isEmpty(value) || value.Count === 0 ) {
+            return " ";
+        }
+        var id  = value._ref.replace(/[^a-z0-9]/g, '');
+        var html = "<span id='M" + id + "'>" + value.Count + "</span>";
+        return html;
+    },
+    
+    _showPredecessorsInDialog: function(record) {
+        var collection_object = record.get('Predecessors');
+        if ( collection_object && collection_object.Count > 0 ) {
+            var id = collection_object._ref.replace(/[^a-z0-9]/g, '');
+            var spans = Ext.query('#P'+id);
+            if ( spans.length > 0 ) {
+                record.getCollection('Predecessors').load({
+                    fetch: ['FormattedID', 'ObjectID', 'Project'],
+                    callback: function(records, operation, success) {
+                        var display_array = Ext.Array.map(records, function(record) {
+                            var url = Rally.nav.Manager.getDetailUrl(record);
+                            return Ext.String.format("<span> <a href='{0}'>{1}</a> </span>",
+                                url,
+                                record.get('FormattedID')
+                            );
+                                
+                        });
+                        
+                        spans[0].innerHTML = display_array.join(',');
+                    }
+                });
+            }
+        }
+    },
+    
+    _showMilestonesInDialog: function(record) {
+        var collection_object = record.get('Milestones');
+        if ( collection_object && collection_object.Count > 0 ) {
+            var id = collection_object._ref.replace(/[^a-z0-9]/g, '');
+            var spans = Ext.query('#M'+id);
+            if ( spans.length > 0 ) {
+                record.getCollection('Milestones').load({
+                    fetch: ['FormattedID', 'ObjectID', 'Name', 'TargetDate'],
+                    callback: function(records, operation, success) {
+                        var display_array = Ext.Array.map(records, function(record) {
+                            return Ext.String.format("<span> {0} - {1} </span>",
+                                record.get('Name'),
+                                Ext.util.Format.date(record.get('TargetDate'),'m/d')
+                            );
+                                
+                        });
+                       
+                        spans[0].innerHTML = display_array.join(',');
+                    }
+                });
+            }
+        }
+    }
 
 });
