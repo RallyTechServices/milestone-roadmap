@@ -3,11 +3,11 @@
 <head>
     <title>Integrated Planning Dashboard</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Mon Nov 23 2015 22:08:05 GMT-0800 (PST) -->
+    <!--  Build Date: Mon Nov 23 2015 22:11:05 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Nov 23 2015 22:08:05 GMT-0800 (PST)";
-        var CHECKSUM = 83320490008;
+        var APP_BUILD_DATE = "Mon Nov 23 2015 22:11:05 GMT-0800 (PST)";
+        var CHECKSUM = 83471863246;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -1423,7 +1423,7 @@ Ext.define('Rally.techservices.ColorSettingsField', {
     cardTemplate: new Ext.XTemplate(
         "<tpl for='.'>",
             "<div class='ts_card' id='{ObjectID}' style='background-color:{__StateColor};'>",
-                "{Name} ({Children.Count})",
+                "{[Ext.String.ellipsis(values.Name,50,false)]} ({Children.Count})",
                 "{[this.getPredecessorSymbol(values)]}",
             "</div>",
         "</tpl>",

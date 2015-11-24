@@ -170,7 +170,7 @@
     cardTemplate: new Ext.XTemplate(
         "<tpl for='.'>",
             "<div class='ts_card' id='{ObjectID}' style='background-color:{__StateColor};'>",
-                "{Name} ({Children.Count})",
+                "{[Ext.String.ellipsis(values.Name,50,false)]} ({Children.Count})",
                 "{[this.getPredecessorSymbol(values)]}",
             "</div>",
         "</tpl>",
