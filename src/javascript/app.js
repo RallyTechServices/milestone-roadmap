@@ -18,7 +18,7 @@ Ext.define("TSMilestoneRoadmapApp", {
     layout: { type: 'border' },
     
     items: [
-        {xtype:'container', region: 'north', itemId:'selector_box', minHeight: 25},
+        {xtype:'container', region: 'north', itemId:'selector_box', layout: 'hbox'},
         {xtype:'container', region: 'center', itemId:'display_box', layout: 'fit'},
         {xtype:'container', region: 'south', itemId:'legend_box', layout: 'hbox'}
     ],
@@ -26,23 +26,31 @@ Ext.define("TSMilestoneRoadmapApp", {
     integrationHeaders : {
         name : "TSMilestoneRoadmapApp"
     },
-                        
+    
+    startDate: Rally.util.DateTime.add(new Date(), 'month', -1),
+    monthCount: 9,
+    
     launch: function() {
         var me = this;
-        this.setLoading("Loading milestones...");
         
+        this.colors = this.getSetting('colorStateMapping');
+        this.projectGroups = this.getSetting('projectGroupsWithOrder');
+        
+        if ( Ext.isString(this.colors) ) { this.colors = Ext.JSON.decode(this.colors); }
+        if ( Ext.isString(this.projectGroups) ) { this.projectGroups = Ext.JSON.decode(this.projectGroups); }
+
+        this._addLegend(this.down('#legend_box'), this.colors);
+        this._addSelectors(this.down('#selector_box'));
+        
+        this._makeCardBoard();
+    },
+    
+    _makeCardBoard: function() {
+        var me = this;
+        this.setLoading("Loading milestones...");
         if ( this.down('tsroadmaptable') ) { this.down('tsroadmaptable').destroy(); }
         
-        var colors = this.getSetting('colorStateMapping');
-        var project_groups = this.getSetting('projectGroupsWithOrder');
-        
-        if ( Ext.isString(colors) ) { colors = Ext.JSON.decode(colors); }
-        if ( Ext.isString(project_groups) ) { project_groups = Ext.JSON.decode(project_groups); }
-        this.logger.log("Colors: ", colors);
-        this.logger.log("Project Groups: ", project_groups);
-                
-                
-        this._addLegend(this.down('#legend_box'), colors);
+        this.logger.log("Making new grid ", this.monthCount, " from " , this.startDate);
         
         this._getAppropriatePIType().then({
             scope  : this,
@@ -52,14 +60,15 @@ Ext.define("TSMilestoneRoadmapApp", {
                 this.PortfolioItemType = types[0];
                 this.logger.log('PI Type:', this.PortfolioItemType);
                 
-                var start_date = Rally.util.DateTime.add(new Date(), 'month', -1);
+                var start_date = this.startDate;
+                var month_count = this.monthCount;
                 
                 this.roadmap = this.down('#display_box').add({ 
                     xtype: 'tsroadmaptable',
                     startDate: start_date,
-                    monthCount: 9,
-                    stateColors: colors,
-                    projectGroups: project_groups,
+                    monthCount: month_count,
+                    stateColors: this.colors,
+                    projectGroups: this.projectGroups,
                     cardModel: this.PortfolioItemType.get('TypePath'),
                     listeners: {
                         gridReady: function() {
@@ -72,8 +81,60 @@ Ext.define("TSMilestoneRoadmapApp", {
             },
             failure: function(msg) {
                 Ext.Msg.alert('Problem loading PI Type Names', msg);
+                me.setLoading(false);
             }
         });
+    },
+    
+    _addSelectors: function(container) {
+        var me = this;
+        
+        container.add({
+            xtype: 'rallydatefield',
+            itemId: 'start_date_selector',
+            fieldLabel: 'First Month',
+            labelWidth: 65,
+            padding: 10,
+            value: me.startDate,
+            listeners: {
+                scope: this,
+                change: this._updateDateValues
+            }
+        });
+
+        container.add({
+            xtype: 'rallydatefield',
+            itemId: 'end_date_selector',
+            fieldLabel: 'Last Month',
+            labelWidth: 65,
+            padding: 10,
+            value: Rally.util.DateTime.add(me.startDate,'month',me.monthCount-1),
+            listeners: {
+                scope: this,
+                change: this._updateDateValues
+            }
+        });
+        
+    },
+    
+    _updateDateValues: function() {
+        var start_date = this.down('#start_date_selector').getValue();
+        var end_date = this.down('#end_date_selector').getValue();
+        
+        if ( Ext.isEmpty(start_date) || Ext.isEmpty(end_date) ) {
+            return;
+        }
+        
+        if ( start_date >= end_date ) {
+            return;
+        }
+        
+        this.startDate = Ext.clone(start_date);
+        start_date.setDate(1);
+        end_date.setDate(1);
+        
+        this.monthCount = Rally.util.DateTime.getDifference(end_date, start_date, 'month') + 1;
+        this._makeCardBoard();
     },
     
     _addLegend: function(container,colors) {

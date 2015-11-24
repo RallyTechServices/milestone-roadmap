@@ -43,7 +43,7 @@
          *     { state1: 'Platinum', state2: 'blue', default: 'Platinum' } 
          */
         stateColors: {
-            'defaultValue': { 'colorStateMapping': 'cyan', 'groupName': 'none' }
+            'defaultValue': { 'colorStateMapping': 'Platinum', 'groupName': 'none' }
         },
         /**
          * 
@@ -199,11 +199,11 @@
             flex: 1
         }];
         
-        var month_stamp = Rally.util.DateTime.add(new Date(), 'month', -1);
+        var month_stamp = this.startDate || new Date();
         
         var card_renderer = this.getCellRenderer();
         
-        for ( var i=0; i<9; i++ ) {
+        for ( var i=0; i<this.monthCount; i++ ) {
             var month = Ext.util.Format.date(month_stamp, 'F');
             columns.push({
                 dataIndex: month,
