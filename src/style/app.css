@@ -6,3 +6,11 @@ div.ts_card {
     border: 1px solid black !important;
     box-shadow: 3px 3px grey !important;
 }
+
+.x-border-layout-ct {
+    background-color: #fff;
+}
+
+div.legend-box {
+    border: 1px solid black
+}

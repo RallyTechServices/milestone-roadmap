@@ -54,7 +54,9 @@
          *      ...
          *    } 
          */
-        projectGroups: {}
+        projectGroups: {},
+        
+        layout: 'fit'
     },
     
     /**
@@ -440,7 +442,6 @@
                     artifact_hash.__Milestone = milestone.getData();
                     return artifact_hash; 
                 });
-                console.log('abm', artifacts_by_milestone);
                 deferred.resolve(artifacts_by_milestone);
             },
             failure: function(msg) {

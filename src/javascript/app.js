@@ -9,16 +9,18 @@ Ext.define("TSMilestoneRoadmapApp", {
     config: {
         defaultSettings: {
             colorStateMapping: {
-                'defaultValue': { 'colorStateMapping': 'Platinum', 'groupName': 'test' },
-                'Discovering':  { 'colorStateMapping': 'Platinum', 'groupName': 'test' }
+               // 'Discovering':  { 'colorStateMapping': 'Platinum', 'groupName': 'test' }
             },
             projectGroupsWithOrder: {}
         }
     },
     
+    layout: { type: 'border' },
+    
     items: [
-        {xtype:'container', itemId:'selector_box', minHeight: 50},
-        {xtype:'container', itemId:'display_box'}
+        {xtype:'container', region: 'north', itemId:'selector_box', minHeight: 25},
+        {xtype:'container', region: 'center', itemId:'display_box', layout: 'fit'},
+        {xtype:'container', region: 'south', itemId:'legend_box', layout: 'hbox'}
     ],
     // TODO
     integrationHeaders : {
@@ -31,6 +33,17 @@ Ext.define("TSMilestoneRoadmapApp", {
         
         if ( this.down('tsroadmaptable') ) { this.down('tsroadmaptable').destroy(); }
         
+        var colors = this.getSetting('colorStateMapping');
+        var project_groups = this.getSetting('projectGroupsWithOrder');
+        
+        if ( Ext.isString(colors) ) { colors = Ext.JSON.decode(colors); }
+        if ( Ext.isString(project_groups) ) { project_groups = Ext.JSON.decode(project_groups); }
+        this.logger.log("Colors: ", colors);
+        this.logger.log("Project Groups: ", project_groups);
+                
+                
+        this._addLegend(this.down('#legend_box'), colors);
+        
         this._getAppropriatePIType().then({
             scope  : this,
             success: function(types) {
@@ -40,14 +53,6 @@ Ext.define("TSMilestoneRoadmapApp", {
                 this.logger.log('PI Type:', this.PortfolioItemType);
                 
                 var start_date = Rally.util.DateTime.add(new Date(), 'month', -1);
-                var colors = this.getSetting('colorStateMapping');
-                var project_groups = this.getSetting('projectGroupsWithOrder');
-                
-                if ( Ext.isString(colors) ) { colors = Ext.JSON.decode(colors); }
-                if ( Ext.isString(project_groups) ) { project_groups = Ext.JSON.decode(project_groups); }
-                
-                this.logger.log("Colors: ", colors);
-                this.logger.log("Project Groups: ", project_groups);
                 
                 this.roadmap = this.down('#display_box').add({ 
                     xtype: 'tsroadmaptable',
@@ -69,6 +74,36 @@ Ext.define("TSMilestoneRoadmapApp", {
                 Ext.Msg.alert('Problem loading PI Type Names', msg);
             }
         });
+    },
+    
+    _addLegend: function(container,colors) {
+        container.removeAll();
+        container.add({ xtype:'container', itemID: 'spacer', flex: 1});
+        
+        console.log('legend', colors);
+        var colors_by_group = {};
+        Ext.Object.each(colors, function(state_name, color_object){
+            var key = color_object.groupName;
+            if ( Ext.isEmpty(key) ) {
+                key = state_name;
+            }
+            var color = color_object.colorStateMapping;
+            if ( !Ext.isEmpty(color) ) {
+                colors_by_group[key] = color;
+            }
+        });
+        
+        Ext.Object.each(colors_by_group, function(name, color){
+            container.add({
+                xtype:'container',
+                layout: 'hbox',
+                items: [
+                    {xtype:'container', cls: 'legend-box', style: "backgroundColor:" + color + ";",  padding: 5, margin: 5},
+                    {xtype:'container', html: name, margin:3 }
+                ]
+            });
+        });
+        
     },
     
     _getCardboardConfig: function() {

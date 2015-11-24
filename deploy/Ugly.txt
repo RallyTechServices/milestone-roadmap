@@ -3,10 +3,10 @@
 <head>
     <title>Integrated Planning Dashboard</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Mon Nov 23 2015 21:17:49 GMT-0800 (PST) -->
+    <!--  Build Date: Mon Nov 23 2015 22:08:05 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Nov 23 2015 21:17:49 GMT-0800 (PST)";
+        var APP_BUILD_DATE = "Mon Nov 23 2015 22:08:05 GMT-0800 (PST)";
         var CHECKSUM = [%= checksum %];
     </script>
     
@@ -32,6 +32,15 @@ div.ts_card {
     border: 1px solid black !important;
     box-shadow: 3px 3px grey !important;
 }
+
+.x-border-layout-ct {
+    background-color: #fff;
+}
+
+div.legend-box {
+    border: 1px solid black
+}
+
     </style>
 
 </head>
