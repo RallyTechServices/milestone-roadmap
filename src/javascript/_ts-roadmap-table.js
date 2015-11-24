@@ -146,6 +146,7 @@
         });
         
         fields.push({ name: 'groupOrder', type:'Number' });
+        fields.push({ name: 'Predecessor', type:'object'});
         
         Ext.define('TSTableRow', {
             extend: 'Ext.data.Model',
@@ -154,10 +155,10 @@
             addArtifact: function(artifact,milestone) {
                 var month = Ext.util.Format.date(milestone, 'F');
                 if ( Ext.isEmpty(this.get(month)) ) {
-                    this.set(month, [artifact.getData()]);
+                    this.set(month, [artifact]);
                 } else {
                     var artifacts = this.get(month);
-                    artifacts.push(artifact.getData());
+                    artifacts.push(artifact);
                     this.set(month, artifacts);
                 }
             }
@@ -166,8 +167,20 @@
     
     cardTemplate: new Ext.XTemplate(
         "<tpl for='.'>",
-            "<div class='ts_card' id='{ObjectID}' style='background-color:{__StateColor};'>{Name} ({Children.Count})</div>",
-        "</tpl>"
+            "<div class='ts_card' id='{ObjectID}' style='background-color:{__StateColor};'>",
+                "{Name} ({Children.Count})",
+                "{[this.getPredecessorSymbol(values)]}",
+            "</div>",
+        "</tpl>",
+        {
+            getPredecessorSymbol:function(record) {
+                console.log('record', record);
+                if ( record.__ChildPredecessorCount && record.__ChildPredecessorCount > 0 ) {
+                    return " <span class='icon-predecessor'> </span>";
+                }
+                return '';
+            }
+        }
     ),
     
     getCellRenderer: function() {
@@ -214,8 +227,6 @@
             milestone_dates_by_oid[milestone.get('ObjectID')] = milestone.get('TargetDate');
         });
         
-        //promises.push(function() { return me._loadArtifactsForMilestones(milestone_dates_by_oid); });
-        
         Ext.Array.each(milestones, function(milestone){
             var oid = milestone.get('ObjectID');
             var target_date = milestone.get('TargetDate');
@@ -227,35 +238,43 @@
         
         Deft.Chain.parallel(promises).then({
             scope: this,
-            success: function(results) {
+            success: function(milestones_with_artifacts) {
                 var me = this;
                 
                 var artifacts_by_milestone = {};
-                Ext.Array.each(results, function(artifacts_by_a_milestone){
+                Ext.Array.each(milestones_with_artifacts, function(artifacts_by_a_milestone){
                     artifacts_by_milestone = Ext.apply(artifacts_by_milestone, artifacts_by_a_milestone);
                 });
                 
-                this.artifacts_by_oid = this._getArtifactsByOIDFromMilestoneHash(artifacts_by_milestone);
-                
-                var rows_by_project_or_group_name = this._getRowsFromMilestoneHash(artifacts_by_milestone);
-                
-                Ext.Object.each( artifacts_by_milestone, function(milestone, artifacts) {
-                    Ext.Array.each(artifacts, function(artifact){
-                        var key = me._getProjectGroupIdentifier(artifact.get('Project'));
-                        if ( key ) {
-                            rows_by_project_or_group_name[key].addArtifact(artifact,milestone);
-                        }
-                    });
+                this._populateChildPredecessors(artifacts_by_milestone).then({
+                    scope: this,
+                    success: function(artifacts_by_milestone) {
+                        this.artifacts_by_oid = this._getArtifactsByOIDFromMilestoneHash(artifacts_by_milestone);
+                        
+                        var rows_by_project_or_group_name = this._getRowsFromMilestoneHash(artifacts_by_milestone);
+                        
+                        Ext.Object.each( artifacts_by_milestone, function(milestone, artifacts) {
+                            Ext.Array.each(artifacts, function(artifact){
+                                var key = me._getProjectGroupIdentifier(artifact.Project);
+                                if ( key ) {
+                                    rows_by_project_or_group_name[key].addArtifact(artifact,milestone);
+                                }
+                            });
+                        });
+                        
+                        rows_by_project_or_group_name = this._addRowsWithoutArtifacts(rows_by_project_or_group_name);
+                        
+                        Ext.Object.each(rows_by_project_or_group_name, function(key, row){
+                            table_store.addSorted(row);
+                        });
+                        
+                        this._setCardListeners();
+                        this.fireEvent('gridReady', this, this.grid);
+                    },
+                    failure: function(msg) {
+                        Ext.Msg.alert('Problem defining cards', msg);
+                    }
                 });
-                
-                rows_by_project_or_group_name = this._addRowsWithoutArtifacts(rows_by_project_or_group_name);
-                
-                Ext.Object.each(rows_by_project_or_group_name, function(key, row){
-                    table_store.addSorted(row);
-                });
-                
-                this._setCardListeners();
-                this.fireEvent('gridReady', this, this.grid);
             },
             failure: function(msg) {
                 Ext.Msg.alert('Problem loading artifacts', msg);
@@ -267,7 +286,8 @@
         var artifacts_by_oid = {};
         Ext.Object.each(artifacts_by_milestone, function(key,artifacts) {
             Ext.Array.each(artifacts, function(artifact){
-                artifacts_by_oid[artifact.get('ObjectID')] = artifact;
+                console.log('artifact', artifact);
+                artifacts_by_oid[artifact.ObjectID] = artifact;
             });
         });
         return artifacts_by_oid;
@@ -309,6 +329,10 @@
         return rows_by_project_or_group_name;
     },
  
+    _convertRowArtifactsToHashes: function(rows_by_project_or_group_name) {
+        console.log('rows_by_project_or_group_name', rows_by_project_or_group_name);
+    },
+    
     _getProjectGroupIdentifier: function(project) {
 
         if ( this.projectGroups == {} || Ext.Object.getKeys(this.projectGroups).length === 0 ) {
@@ -344,8 +368,8 @@
         
         Ext.Object.each( artifacts_by_milestone, function(milestone, artifacts){
             Ext.Array.each(artifacts, function(artifact) {
-                var key = me._getProjectGroupIdentifier(artifact.get('Project'));
-                var group_order = me._getGroupOrder(artifact.get('Project'));
+                var key = me._getProjectGroupIdentifier(artifact.Project);
+                var group_order = me._getGroupOrder(artifact.Project);
                 
                 if ( key ) {
                     rows_by_project_or_group_name[key] = Ext.create('TSTableRow',{
@@ -402,19 +426,19 @@
     
     _loadArtifactsForMilestone: function(milestone_oid, milestone_date) {
         var deferred = Ext.create('Deft.Deferred');
+        var me = this;
         
         var config = {
             model:   this.cardModel,
-            fetch:   ['FormattedID', 'Name', 'ObjectID','Project','State','Children'],
+            fetch:   ['FormattedID', 'Name', 'ObjectID','Project','State','Children','Predecessors'],
             filters: [{property:'Milestones.ObjectID', operator: 'contains', value: milestone_oid}]
         };
         
         TSUtilities.loadWSAPIItems(config).then({
             scope: this,
             success: function(artifacts) {
-                
                 var artifacts_by_milestone = {};
-                artifacts_by_milestone[milestone_date] = artifacts;
+                artifacts_by_milestone[milestone_date] = Ext.Array.map( artifacts, function(artifact) { return artifact.getData(); });
                 deferred.resolve(artifacts_by_milestone);
             },
             failure: function(msg) {
@@ -425,6 +449,57 @@
         return deferred;
     },
     
+    _populateChildPredecessors: function(artifacts_by_milestone){
+        var deferred = Ext.create('Deft.Deferred');
+        
+        var artifacts_by_oid = {};
+        
+        Ext.Object.each(artifacts_by_milestone, function(key, artifacts){
+            Ext.Array.each(artifacts, function(artifact){
+                artifacts_by_oid[artifact.ObjectID] = artifact;
+            });
+        });
+        
+        var artifact_filter = Ext.Array.map(Ext.Object.getValues(artifacts_by_oid), function(artifact){ 
+            return { property:'Parent.ObjectID', value: artifact.ObjectID };
+        });
+        
+        if ( artifact_filter.length === 0 ) {
+            artifact_filter = [{property:'ObjectID',value: -1}]; // don't look for tasks, but need to fulfill promises
+        }
+        var config = {
+            model: 'PortfolioItem/Feature',
+            filters: Rally.data.wsapi.Filter.or(artifact_filter),
+            fetch: ['Predecessors','Parent','ObjectID']
+        };
+        
+        TSUtilities.loadWSAPIItems(config).then({
+            scope: this,
+            success: function(children) {
+
+                Ext.Array.each(children, function(child){
+                    if ( child.get('Parent') ){
+                        var parent_oid = child.get('Parent').ObjectID;
+                        var parent = artifacts_by_oid[parent_oid];
+                        if ( !parent.__ChildPredecessorCount ) {
+                            parent.__ChildPredecessorCount = 0;
+                        }
+                        var child_predecessor_count = child.get('Predecessors').Count;
+                        var parent_predecessor_count = parent.__ChildPredecessorCount;
+                        parent.__ChildPredecessorCount = parent_predecessor_count + child_predecessor_count;
+                        console.log('parent',parent);
+                    }
+                });
+                deferred.resolve(artifacts_by_milestone);
+            },
+            failure: function(msg) {
+                deferred.reject(msg);
+            }
+        });
+        
+        return deferred.promise;
+    },
+    
     _showDialogForPI: function(object_id) {
         var artifact = this.artifacts_by_oid[object_id];
         var me = this;
@@ -432,7 +507,7 @@
             id       : 'popup',
             width    : Ext.getBody().getWidth() - 40,
             height   : Ext.getBody().getHeight() - 40,
-            title    : artifact.get('Name'),
+            title    : artifact.Name,
             autoShow : true,
             closable : true,
             layout   : 'fit',
@@ -498,6 +573,8 @@
         });
         
     },
+    
+    
     
     _renderPredecessors: function(value,meta,record) {
         if ( Ext.isEmpty(value) || value.Count === 0 ) {
