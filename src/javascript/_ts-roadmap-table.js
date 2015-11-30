@@ -102,11 +102,7 @@
             sortableColumns: false,
             disableSelection: true,
             viewConfig: {
-                stripeRows: true,
-                plugins: {
-                    ptype: 'gridviewdragdrop',
-                    dragText: 'Drag and drop to reorder'
-                }
+                stripeRows: true
             }
         });
         
