@@ -115,7 +115,50 @@ Ext.define("TSMilestoneRoadmapApp", {
             }
         });
         
+        container.add({
+            xtype:'container',
+            itemId: 'spacer',
+            flex: 1
+        });
+        
+        container.add({
+            xtype:'rallybutton',
+            text: '<span class="icon-export"> </span>',
+            listeners: {
+                scope: this,
+                click: this._makePDF
+            }
+        });
+        
     },
+    
+    _makePDF: function() {
+        // requires jsPDF
+        var me = this;
+        var grid_box = this.down('#display_box').getEl();
+        
+        //var html = grid_box.getEl().getHTML();
+        var html = document.getElementById(grid_box.id)
+                
+        this.setLoading('Generating PDF');
+
+        var pdf = new jsPDF('p','pt','letter');
+
+         pdf.addHTML(html, function () {
+            pdf.save('test.pdf');
+            me.setLoading(false);
+         });
+
+    },
+    
+    _getCanvas: function(html) {
+        return html2canvas(html, {
+            imageTimeout: 2000,
+            removeContainer: false
+        });
+        
+    },
+    
     
     _updateDateValues: function() {
         var start_date = this.down('#start_date_selector').getValue();
@@ -141,7 +184,6 @@ Ext.define("TSMilestoneRoadmapApp", {
         container.removeAll();
         container.add({ xtype:'container', itemID: 'spacer', flex: 1});
         
-        console.log('legend', colors);
         var colors_by_group = {};
         Ext.Object.each(colors, function(state_name, color_object){
             var key = color_object.groupName;
