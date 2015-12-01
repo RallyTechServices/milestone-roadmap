@@ -165,12 +165,18 @@
     
     cardTemplate: new Ext.XTemplate(
         "<tpl for='.'>",
-            "<div class='ts_card' id='{ObjectID}' style='background-color:{__StateColor};'>",
+            "<div class='ts_card' id='{ObjectID}' style='{[this.getStyle(values)]}'>",
                 "{[Ext.String.ellipsis(values.Name,50,false)]} ({Children.Count})",
                 "{[this.getPredecessorSymbol(values)]}",
             "</div>",
         "</tpl>",
         {
+            getStyle: function(record) {
+                return Ext.String.format(
+                    "background-color:{0};",
+                    record.DisplayColor || "white"
+                );
+            },
             getPredecessorSymbol:function(record) {
                 if ( record.__ChildPredecessorCount && record.__ChildPredecessorCount > 0 ) {
                     return " <span class='icon-predecessor'> </span>";

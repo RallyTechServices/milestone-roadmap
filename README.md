@@ -10,6 +10,7 @@ column.
 * Example of attaching a click event to an html fragment (for the popup)
 * Example of multiple values in a setting table that interact (color and group, 
 project group name and order)
+* This app uses jsPDF and canvas2HTML to create a PDF version of the roadmap
 
 
 ### First Load

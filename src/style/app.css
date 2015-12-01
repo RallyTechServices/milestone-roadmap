@@ -14,3 +14,10 @@ div.ts_card {
 div.legend-box {
     border: 1px solid black
 }
+
+.rally-grid .x-grid-row.x-grid-row-alt .x-grid-cell, 
+.rally-grid .x-grid-row.x-grid-row-alt .x-grid-rowwrap-div, 
+.rally-grid .x-grid-row.x-grid-row-alt .x-grid-cell-special, 
+tr.x-grid-row-alt td, tr.x-grid-row-alt {
+    background-color: #e6e6e6;
+}

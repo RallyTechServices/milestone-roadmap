@@ -3,11 +3,11 @@
 <head>
     <title>Integrated Planning Dashboard</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Sun Nov 29 2015 17:41:50 GMT-0800 (PST) -->
+    <!--  Build Date: Tue Dec 01 2015 09:58:29 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Sun Nov 29 2015 17:41:50 GMT-0800 (PST)";
-        var CHECKSUM = 10544416235865;
+        var APP_BUILD_DATE = "Tue Dec 01 2015 09:58:29 GMT-0800 (PST)";
+        var CHECKSUM = 10559019560378;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -18300,12 +18300,18 @@ Ext.define('Rally.techservices.ColorSettingsField', {
     
     cardTemplate: new Ext.XTemplate(
         "<tpl for='.'>",
-            "<div class='ts_card' id='{ObjectID}' style='background-color:{__StateColor};'>",
+            "<div class='ts_card' id='{ObjectID}' style='{[this.getStyle(values)]}'>",
                 "{[Ext.String.ellipsis(values.Name,50,false)]} ({Children.Count})",
                 "{[this.getPredecessorSymbol(values)]}",
             "</div>",
         "</tpl>",
         {
+            getStyle: function(record) {
+                return Ext.String.format(
+                    "background-color:{0};",
+                    record.DisplayColor || "white"
+                );
+            },
             getPredecessorSymbol:function(record) {
                 if ( record.__ChildPredecessorCount && record.__ChildPredecessorCount > 0 ) {
                     return " <span class='icon-predecessor'> </span>";
@@ -19092,6 +19098,12 @@ div.legend-box {
     border: 1px solid black
 }
 
+.rally-grid .x-grid-row.x-grid-row-alt .x-grid-cell, 
+.rally-grid .x-grid-row.x-grid-row-alt .x-grid-rowwrap-div, 
+.rally-grid .x-grid-row.x-grid-row-alt .x-grid-cell-special, 
+tr.x-grid-row-alt td, tr.x-grid-row-alt {
+    background-color: #e6e6e6;
+}
     </style>
 
 </head>
