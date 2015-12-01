@@ -3,11 +3,11 @@
 <head>
     <title>Integrated Planning Dashboard</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Tue Dec 01 2015 09:58:29 GMT-0800 (PST) -->
+    <!--  Build Date: Tue Dec 01 2015 10:21:47 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Dec 01 2015 09:58:29 GMT-0800 (PST)";
-        var CHECKSUM = 10559019560378;
+        var APP_BUILD_DATE = "Tue Dec 01 2015 10:21:47 GMT-0800 (PST)";
+        var CHECKSUM = 10563115161660;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -18175,10 +18175,10 @@ Ext.define('Rally.techservices.ColorSettingsField', {
         /**
          * 
          * @cfg {object} 
-         *     { state1: 'Platinum', state2: 'blue', default: 'Platinum' } 
+         *     { state1: 'white', state2: 'blue', default: 'white' } 
          */
         stateColors: {
-            'defaultValue': { 'colorStateMapping': 'Platinum', 'groupName': 'none' }
+            'defaultValue': { 'colorStateMapping': 'white', 'groupName': 'none' }
         },
         /**
          * 
@@ -18307,9 +18307,15 @@ Ext.define('Rally.techservices.ColorSettingsField', {
         "</tpl>",
         {
             getStyle: function(record) {
+                console.log('--', record.Name, record);
+                
+                var color = "white";
+                if ( !Ext.isEmpty(record.__StateColor) ) {
+                    color = record.__StateColor;
+                }
                 return Ext.String.format(
-                    "background-color:{0};",
-                    record.DisplayColor || "white"
+                    "background-color:{0} !important;",
+                    color
                 );
             },
             getPredecessorSymbol:function(record) {
@@ -18526,7 +18532,7 @@ Ext.define('Rally.techservices.ColorSettingsField', {
                 if ( default_value.colorStateMapping ) { 
                     default_value = default_value.colorStateMapping;
                 }
-                var color = default_value || 'Platinum';
+                var color = default_value || 'white';
                 
                 if ( artifact.State ) {
                     var value = this.stateColors[artifact.State.Name];

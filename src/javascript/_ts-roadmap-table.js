@@ -40,10 +40,10 @@
         /**
          * 
          * @cfg {object} 
-         *     { state1: 'Platinum', state2: 'blue', default: 'Platinum' } 
+         *     { state1: 'white', state2: 'blue', default: 'white' } 
          */
         stateColors: {
-            'defaultValue': { 'colorStateMapping': 'Platinum', 'groupName': 'none' }
+            'defaultValue': { 'colorStateMapping': 'white', 'groupName': 'none' }
         },
         /**
          * 
@@ -172,9 +172,15 @@
         "</tpl>",
         {
             getStyle: function(record) {
+                console.log('--', record.Name, record);
+                
+                var color = "white";
+                if ( !Ext.isEmpty(record.__StateColor) ) {
+                    color = record.__StateColor;
+                }
                 return Ext.String.format(
-                    "background-color:{0};",
-                    record.DisplayColor || "white"
+                    "background-color:{0} !important;",
+                    color
                 );
             },
             getPredecessorSymbol:function(record) {
@@ -391,7 +397,7 @@
                 if ( default_value.colorStateMapping ) { 
                     default_value = default_value.colorStateMapping;
                 }
-                var color = default_value || 'Platinum';
+                var color = default_value || 'white';
                 
                 if ( artifact.State ) {
                     var value = this.stateColors[artifact.State.Name];
