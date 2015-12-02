@@ -172,7 +172,6 @@
         "</tpl>",
         {
             getStyle: function(record) {
-                console.log('--', record.Name, record);
                 
                 var color = "white";
                 if ( !Ext.isEmpty(record.__StateColor) ) {
@@ -513,8 +512,6 @@
     _showDialogForPI: function(object_id) {
         var artifact = this.artifacts_by_oid[object_id];
         var me = this;
-        
-        console.log('artifact', artifact);
         
         var title = Ext.String.format("{0} ({1} - {2})",
             artifact.Name,
