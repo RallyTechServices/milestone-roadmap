@@ -135,78 +135,64 @@ Ext.define("TSMilestoneRoadmapApp", {
     _makePDF: function() {
         // requires jsPDF
         var me = this;
-        var grid_box = this.down('#display_box');
-        var grid_el = grid_box.getEl();
         
-        this.setLoading('Generating PDF');
-        
-        var pdf_html = document.getElementById(grid_el.id);
-        
-        var pdf = new jsPDF('p','pt','letter');
-        
+        this.setLoading('Generating PDF...');
+
         var options = {
             format : 'PNG',
             width: null,
+            height: null
 //            dim: { h: 0, w: Ext.getBody().getWidth() }
         }
-        
-        
-        pdf.addHTML(pdf_html, options, function () {
-            pdf.save('test.pdf');
-            me.setLoading(false);
+
+        //relaunch to make it go on forever because scrolling interferes with the pdf
+        var popup = Ext.create('Rally.ui.dialog.Dialog', {
+            id       : 'popup',
+            width    : Ext.getBody().getWidth() - 40,
+            height   : 7000,
+            title    : 'make pdf' ,
+            autoShow : true,
+            closable : false,
+            autoScroll: false,
+            autoCenter: false,
+           
+            items    : [{
+                xtype:'container',
+                id: 'pdf_box',
+                items: [{
+                    id: 'pdf_grid_box',
+                    itemId: 'pdf_grid_box',
+                    xtype:'container',
+                    margin: 50
+                }]
+            }]
         });
+        
+        var start_date = this.startDate;
+        var month_count = this.monthCount;
+        
+        popup.down('#pdf_grid_box').add({
+            xtype: 'tsroadmaptable',
+            startDate: start_date,
+            monthCount: month_count,
+            stateColors: this.colors,
+            projectGroups: this.projectGroups,
+            cardModel: this.PortfolioItemType.get('TypePath'),
+            listeners: {
+                gridReady: function() {
+                    var pdf_html = document.getElementById('pdf_box');
                     
-//        var popup = Ext.create('Rally.ui.dialog.Dialog', {
-//            id       : 'popup',
-//            width    : Ext.getBody().getWidth() - 40,
-//            height   : Ext.getBody().getHeight() - 40,
-//            title    : 'make pdf' ,
-//            autoShow : true,
-//            closable : true,
-//            autoScroll: true,
-//            items    : [{
-//                xtype:'container',
-//                id: 'pdf_box',
-//                items: [{
-//                    itemId: 'pdf_grid_box',
-//                    xtype:'container',
-//                    margin: 50
-//                }]
-//            }]
-//        });
-//        
-//        var start_date = this.startDate;
-//        var month_count = this.monthCount;
-//        
-//        popup.down('#pdf_grid_box').add({
-//            xtype: 'tsroadmaptable',
-//            startDate: start_date,
-//            monthCount: month_count,
-//            stateColors: this.colors,
-//            projectGroups: this.projectGroups,
-//            cardModel: this.PortfolioItemType.get('TypePath'),
-//            listeners: {
-//                gridReady: function() {
-//                    var pdf_html = document.getElementById('pdf_box');
-//                    
-//                    var pdf = new jsPDF('p','pt','letter');
-//                    
-//                    var options = {
-//                        format : 'PNG',
-//                        width: 700,
-//                        dim: { h: 0, w: 800 }
-//                    }
-//                    
-//                    
-//                    pdf.addHTML(pdf_html, options, function () {
-//                        pdf.save('test.pdf');
-//                        me.setLoading(false);
-//                        //popup.destroy();
-//                    });
-//                     
-//                }
-//            }
-//        });
+                    var pdf = new jsPDF('p','pt','letter');
+                    
+                    pdf.addHTML(pdf_html, options, function () {
+                        pdf.save('test.pdf');
+                        me.setLoading(false);
+                        popup.destroy();
+                    });
+                     
+                }
+            }
+        });
 
     },
     
