@@ -251,8 +251,14 @@
                 
                 var artifacts_by_milestone = {};
                 Ext.Array.each(milestones_with_artifacts, function(artifacts_by_a_milestone){
-                    artifacts_by_milestone = Ext.apply(artifacts_by_milestone, artifacts_by_a_milestone);
+                    Ext.Object.each(artifacts_by_a_milestone, function(key,value) {
+                        if ( !artifacts_by_milestone[key] ) { artifacts_by_milestone[key] = []; }
+                        Ext.Array.push( artifacts_by_milestone[key], value );
+                    });
                 });
+                                
+                console.log('milestones_with_artifacts', milestones_with_artifacts);
+                console.log('artifacts_by_milestone', artifacts_by_milestone);
                 
                 this._populateChildPredecessors(artifacts_by_milestone).then({
                     scope: this,
