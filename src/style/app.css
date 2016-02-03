@@ -21,3 +21,13 @@ div.legend-box {
 tr.x-grid-row-alt td, tr.x-grid-row-alt {
     background-color: #e6e6e6;
 }
+
+.x-panel-body-default {
+    border: none;
+}
+
+.tstitle {
+    text-align: center;
+    border: none;
+    font-size: 200%;
+}

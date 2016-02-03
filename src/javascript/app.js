@@ -34,6 +34,12 @@ Ext.define("TSMilestoneRoadmapApp", {
     launch: function() {
         var me = this;
         
+        this.app_title = "No Title";
+        
+        if ( !this.isExternal() ) {
+            this.app_title = this._getPanelTitle();
+        }
+        
         this.colors = this.getSetting('colorStateMapping');
         this.projectGroups = this.getSetting('projectGroupsWithOrder');
         
@@ -160,12 +166,21 @@ Ext.define("TSMilestoneRoadmapApp", {
             items    : [{
                 xtype:'container',
                 id: 'pdf_box',
-                items: [{
-                    id: 'pdf_grid_box',
-                    itemId: 'pdf_grid_box',
-                    xtype:'container',
-                    margin: 50
-                }]
+                items: [
+                    {
+                        itemId: 'pdf_title_box',
+                        xtype:'container',
+                        cls: 'tstitle',
+                        margin: 15,
+                        html: me.app_title
+                    },
+                    {
+                        id: 'pdf_grid_box',
+                        itemId: 'pdf_grid_box',
+                        xtype:'container',
+                        margin: '10px 50px 5px 50px'
+                    }
+                ]
             }]
         });
         
@@ -185,15 +200,15 @@ Ext.define("TSMilestoneRoadmapApp", {
             cardModel: this.PortfolioItemType.get('TypePath'),
             listeners: {
                 gridReady: function() {
-                    var pdf_html = document.getElementById('pdf_box');
-                    
-                    var pdf = new jsPDF(orientation,'pt','letter');
-                    
-                    pdf.addHTML(pdf_html, options, function () {
-                        pdf.save('roadmap.pdf');
-                        me.setLoading(false);
-                        popup.destroy();
-                    });
+//                    var pdf_html = document.getElementById('pdf_box');
+//                    
+//                    var pdf = new jsPDF(orientation,'pt','letter');
+//                    
+//                    pdf.addHTML(pdf_html, options, function () {
+//                        pdf.save('roadmap.pdf');
+//                        me.setLoading(false);
+//                        popup.destroy();
+//                    });
                      
                 }
             }
@@ -258,6 +273,24 @@ Ext.define("TSMilestoneRoadmapApp", {
                 xtype: 'tsmilestonecolumn'
             }
         };
+    },
+    
+    _getPanelTitle: function() {
+        var title = "Could not find title";
+        
+        var iframe_parent = window.frameElement ? window.frameElement.parentNode : null;
+
+        // pop outsied the iframe
+        var grandparent = Ext.get(iframe_parent.parentNode);
+        // search up the tree for the portlet 
+        var panel_top = Ext.get(grandparent.parent('.x-portlet'));
+        // search back down for the title bar
+        var title_bars = panel_top.query('.x-panel-header-text');
+        
+        if ( title_bars.length > 0 ) {
+            title = title_bars[0].innerHTML;
+        }
+        return title;
     },
     
     _getAppropriatePIType: function() {

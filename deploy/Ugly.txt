@@ -3,10 +3,10 @@
 <head>
     <title>Integrated Planning Dashboard</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Tue Feb 02 2016 16:38:00 GMT-0800 (PST) -->
+    <!--  Build Date: Tue Feb 02 2016 18:45:02 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Feb 02 2016 16:38:00 GMT-0800 (PST)";
+        var APP_BUILD_DATE = "Tue Feb 02 2016 18:45:02 GMT-0800 (PST)";
         var CHECKSUM = [%= checksum %];
     </script>
     
@@ -46,6 +46,16 @@ div.legend-box {
 .rally-grid .x-grid-row.x-grid-row-alt .x-grid-cell-special, 
 tr.x-grid-row-alt td, tr.x-grid-row-alt {
     background-color: #e6e6e6;
+}
+
+.x-panel-body-default {
+    border: none;
+}
+
+.tstitle {
+    text-align: center;
+    border: none;
+    font-size: 200%;
 }
     </style>
 
