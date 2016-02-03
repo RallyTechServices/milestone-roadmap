@@ -11,6 +11,7 @@ Ext.define("TSMilestoneRoadmapApp", {
             colorStateMapping: {
                // 'Discovering':  { 'colorStateMapping': 'Platinum', 'groupName': 'test' }
             },
+            pdfOrientation: 'landscape',
             projectGroupsWithOrder: {}
         }
     },
@@ -171,6 +172,10 @@ Ext.define("TSMilestoneRoadmapApp", {
         var start_date = this.startDate;
         var month_count = this.monthCount;
         
+        var orientations = { 'landscape': 'l', 'portrait': 'p' };
+
+        var orientation = orientations[this.getSetting('pdfOrientation')] || 'l';
+        
         popup.down('#pdf_grid_box').add({
             xtype: 'tsroadmaptable',
             startDate: start_date,
@@ -182,10 +187,10 @@ Ext.define("TSMilestoneRoadmapApp", {
                 gridReady: function() {
                     var pdf_html = document.getElementById('pdf_box');
                     
-                    var pdf = new jsPDF('p','pt','letter');
+                    var pdf = new jsPDF(orientation,'pt','letter');
                     
                     pdf.addHTML(pdf_html, options, function () {
-                        pdf.save('test.pdf');
+                        pdf.save('roadmap.pdf');
                         me.setLoading(false);
                         popup.destroy();
                     });
@@ -320,7 +325,7 @@ Ext.define("TSMilestoneRoadmapApp", {
             fieldLabel: 'Colors by State',
             width: this.getWidth() -10,
             margin: 0,
-            height: 200,
+            height: 175,
             xtype: 'colorsettingsfield',
             handlesEvents: {
                 fieldselected: function(field) {
@@ -333,6 +338,19 @@ Ext.define("TSMilestoneRoadmapApp", {
                 }
             },
             bubbleEvents: 'colorsettingsready'
+        },
+        {
+            name: 'pdfOrientation',
+            fieldLabel: 'PDF Orientation',
+            xtype: 'rallycombobox',
+            store: Ext.create('Rally.data.custom.Store',{ data: [
+                {displayName:'Landscape', value: 'l'},
+                {displayName:'Portrait',  value: 'p'}
+            ]}),
+            displayField: 'displayName',
+            valueField: 'value',
+            readyEvent: 'ready'
+
         }];
     }
 });

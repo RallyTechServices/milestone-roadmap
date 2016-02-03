@@ -3,11 +3,11 @@
 <head>
     <title>Integrated Planning Dashboard</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Thu Jan 07 2016 11:25:52 GMT-0800 (PST) -->
+    <!--  Build Date: Tue Feb 02 2016 16:37:58 GMT-0800 (PST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Jan 07 2016 11:25:52 GMT-0800 (PST)";
-        var CHECKSUM = 10598805581563;
+        var APP_BUILD_DATE = "Tue Feb 02 2016 16:37:58 GMT-0800 (PST)";
+        var CHECKSUM = 10617687459631;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -18791,6 +18791,7 @@ Ext.define("TSMilestoneRoadmapApp", {
             colorStateMapping: {
                // 'Discovering':  { 'colorStateMapping': 'Platinum', 'groupName': 'test' }
             },
+            pdfOrientation: 'landscape',
             projectGroupsWithOrder: {}
         }
     },
@@ -18951,6 +18952,10 @@ Ext.define("TSMilestoneRoadmapApp", {
         var start_date = this.startDate;
         var month_count = this.monthCount;
         
+        var orientations = { 'landscape': 'l', 'portrait': 'p' };
+
+        var orientation = orientations[this.getSetting('pdfOrientation')] || 'l';
+        
         popup.down('#pdf_grid_box').add({
             xtype: 'tsroadmaptable',
             startDate: start_date,
@@ -18962,10 +18967,10 @@ Ext.define("TSMilestoneRoadmapApp", {
                 gridReady: function() {
                     var pdf_html = document.getElementById('pdf_box');
                     
-                    var pdf = new jsPDF('p','pt','letter');
+                    var pdf = new jsPDF(orientation,'pt','letter');
                     
                     pdf.addHTML(pdf_html, options, function () {
-                        pdf.save('test.pdf');
+                        pdf.save('roadmap.pdf');
                         me.setLoading(false);
                         popup.destroy();
                     });
@@ -19100,7 +19105,7 @@ Ext.define("TSMilestoneRoadmapApp", {
             fieldLabel: 'Colors by State',
             width: this.getWidth() -10,
             margin: 0,
-            height: 200,
+            height: 175,
             xtype: 'colorsettingsfield',
             handlesEvents: {
                 fieldselected: function(field) {
@@ -19113,6 +19118,19 @@ Ext.define("TSMilestoneRoadmapApp", {
                 }
             },
             bubbleEvents: 'colorsettingsready'
+        },
+        {
+            name: 'pdfOrientation',
+            fieldLabel: 'PDF Orientation',
+            xtype: 'rallycombobox',
+            store: Ext.create('Rally.data.custom.Store',{ data: [
+                {displayName:'Landscape', value: 'l'},
+                {displayName:'Portrait',  value: 'p'}
+            ]}),
+            displayField: 'displayName',
+            valueField: 'value',
+            readyEvent: 'ready'
+
         }];
     }
 });
