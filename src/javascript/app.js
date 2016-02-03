@@ -175,6 +175,13 @@ Ext.define("TSMilestoneRoadmapApp", {
                         html: me.app_title
                     },
                     {
+                        itemId: 'pdf_legend_box',
+                        xtype:'container',
+                        cls: 'tslegend',
+                        layout: 'hbox',
+                        margin: 15
+                    },
+                    {
                         id: 'pdf_grid_box',
                         itemId: 'pdf_grid_box',
                         xtype:'container',
@@ -189,7 +196,8 @@ Ext.define("TSMilestoneRoadmapApp", {
         
         var orientations = { 'landscape': 'l', 'portrait': 'p' };
 
-        var orientation = orientations[this.getSetting('pdfOrientation')] || 'l';
+        var orientation = orientations[me.getSetting('pdfOrientation')] || 'l';
+        console.log('orientation', orientation, me.getSetting('pdfOrientation'));
         
         popup.down('#pdf_grid_box').add({
             xtype: 'tsroadmaptable',
@@ -200,15 +208,18 @@ Ext.define("TSMilestoneRoadmapApp", {
             cardModel: this.PortfolioItemType.get('TypePath'),
             listeners: {
                 gridReady: function() {
-//                    var pdf_html = document.getElementById('pdf_box');
-//                    
-//                    var pdf = new jsPDF(orientation,'pt','letter');
-//                    
-//                    pdf.addHTML(pdf_html, options, function () {
-//                        pdf.save('roadmap.pdf');
-//                        me.setLoading(false);
-//                        popup.destroy();
-//                    });
+                    var legend_container = popup.down('#pdf_legend_box');
+                    me._addLegend(legend_container, me.colors);
+        
+                    var pdf_html = document.getElementById('pdf_box');
+                    
+                    var pdf = new jsPDF(orientation,'pt','letter');
+                    
+                    pdf.addHTML(pdf_html, options, function () {
+                        pdf.save('roadmap.pdf');
+                        me.setLoading(false);
+                        popup.destroy();
+                    });
                      
                 }
             }
@@ -253,6 +264,8 @@ Ext.define("TSMilestoneRoadmapApp", {
         });
         
         Ext.Object.each(colors_by_group, function(name, color){
+            if ( Ext.isEmpty(name) ){ name = "None"; };
+            
             container.add({
                 xtype:'container',
                 layout: 'hbox',
@@ -377,8 +390,8 @@ Ext.define("TSMilestoneRoadmapApp", {
             fieldLabel: 'PDF Orientation',
             xtype: 'rallycombobox',
             store: Ext.create('Rally.data.custom.Store',{ data: [
-                {displayName:'Landscape', value: 'l'},
-                {displayName:'Portrait',  value: 'p'}
+                {displayName:'Landscape', value: 'landscape'},
+                {displayName:'Portrait',  value: 'portrait'}
             ]}),
             displayField: 'displayName',
             valueField: 'value',
