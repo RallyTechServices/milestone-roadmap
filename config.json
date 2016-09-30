@@ -2,6 +2,6 @@
     "name": "Integrated Planning Dashboard",
     "className": "TSMilestoneRoadmapApp",
     "server": "https://us1.rallydev.com",
-    "sdk": "2.0",
-    "apiKey": "_PUT_APIKEY_HERE_"
+    "sdk": "2.1",
+    "story": " "
 }

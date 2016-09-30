@@ -2,15 +2,17 @@
 <html>
 <head>
     <title>Integrated Planning Dashboard</title>
-    <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Tue Feb 02 2016 19:06:11 GMT-0800 (PST) -->
+    <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
+    <!--  Build Date: Thu Sep 29 2016 19:23:35 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Feb 02 2016 19:06:11 GMT-0800 (PST)";
-        var CHECKSUM = 10663732059293;
+        var APP_BUILD_DATE = "Thu Sep 29 2016 19:23:35 GMT-0700 (PDT)";
+        var STORY    = " ";
+        var BUILDER  = "jmartin";
+        var CHECKSUM = 10674428586497;
     </script>
     
-    <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
+    <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
 
     <script type="text/javascript">
         Rally.onReady(function() {
@@ -17468,6 +17470,8 @@ Ext.define('Rally.data.wsapi.ProjectTreeStore', {
     extend: 'Rally.data.wsapi.TreeStore',
     alias: 'store.rallyprojectwsapitreestore',
 
+    autoSync: true,
+    
     /**
      * The type definition typePaths to render as root items (required)
      * @cfg {String[]} parentTypes
@@ -17482,7 +17486,7 @@ Ext.define('Rally.data.wsapi.ProjectTreeStore', {
         property: 'Name',
         direction: 'ASC'
     }],
-
+        
     getParentFieldNamesByChildType: function(childType, parentType) {
         var model = this.model; //.getArtifactComponentModel(childType);
         return _.transform(this.mapper.getParentFields(childType, parentType), function(acc, field) {
@@ -17858,7 +17862,7 @@ Ext.define('TSUtilities',{
         var deferred = Ext.create('Deft.Deferred');
         var me = this;
         
-        this.logger.log(config.model, "Loading with filters: ", Ext.clone(config.filters));
+        this.logger.log("Loading ", config.model, " with filters: ", Ext.clone(config.filters));
         
         var default_config = {
             fetch: ['ObjectID']
@@ -18191,6 +18195,8 @@ Ext.define('Rally.techservices.ColorSettingsField', {
          */
         projectGroups: {},
         
+        childPITypePath: 'PortfolioItem/Feature',
+        
         layout: 'fit'
     },
     
@@ -18391,9 +18397,6 @@ Ext.define('Rally.techservices.ColorSettingsField', {
                         Ext.Array.push( artifacts_by_milestone[key], value );
                     });
                 });
-                                
-                console.log('milestones_with_artifacts', milestones_with_artifacts);
-                console.log('artifacts_by_milestone', artifacts_by_milestone);
                 
                 this._populateChildPredecessors(artifacts_by_milestone).then({
                     scope: this,
@@ -18446,6 +18449,7 @@ Ext.define('Rally.techservices.ColorSettingsField', {
         
         Ext.Array.each(cards, function(card){
             var card_element = Ext.get(card);
+            
             card_element.on('click', function(evt,c) {
                 this._showDialogForPI(c.id);
             },this);
@@ -18616,10 +18620,10 @@ Ext.define('Rally.techservices.ColorSettingsField', {
         });
         
         if ( artifact_filter.length === 0 ) {
-            artifact_filter = [{property:'ObjectID',value: -1}]; // don't look for tasks, but need to fulfill promises
+            artifact_filter = [{property:'ObjectID',value: -1}]; // don't look for items, but need to fulfill promises
         }
         var config = {
-            model: 'PortfolioItem/Feature',
+            model: this.childPITypePath,
             filters: Rally.data.wsapi.Filter.or(artifact_filter),
             fetch: ['Predecessors','Parent','ObjectID','Milestones']
         };
@@ -18654,6 +18658,11 @@ Ext.define('Rally.techservices.ColorSettingsField', {
         var artifact = this.artifacts_by_oid[object_id];
         var me = this;
         
+        if ( Ext.isEmpty(artifact) ) { 
+            console.log("Cannot find artifact record for '", object_id, "'");
+            return; 
+        }
+         
         var title = Ext.String.format("{0} ({1} - {2})",
             artifact.Name,
             artifact.__Milestone.Name,
@@ -18686,7 +18695,7 @@ Ext.define('Rally.techservices.ColorSettingsField', {
                 ],
                 storeConfig          : {
                     pageSize: 10000,
-                    model: 'PortfolioItem/Feature', 
+                    model: this.childPITypePath, 
                     filters: [{property:'Parent.ObjectID', value: object_id}]
                 },
                 listeners: {
@@ -18814,63 +18823,70 @@ Ext.define("TSMilestoneRoadmapApp", {
     launch: function() {
         var me = this;
         
-        this.app_title = "No Title";
+        this._loadPITypes().then({
+            success: function(pi_types) {
+                this.pi_types = pi_types;
+                
+                this.app_title = "No Title";
+                
+                if ( !this.isExternal() ) {
+                    this.app_title = this._getPanelTitle();
+                }
+                
+                this.colors = this.getSetting('colorStateMapping');
+                this.projectGroups = this.getSetting('projectGroupsWithOrder');
+                
+                if ( Ext.isString(this.colors) ) { this.colors = Ext.JSON.decode(this.colors); }
+                if ( Ext.isString(this.projectGroups) ) { this.projectGroups = Ext.JSON.decode(this.projectGroups); }
         
-        if ( !this.isExternal() ) {
-            this.app_title = this._getPanelTitle();
-        }
-        
-        this.colors = this.getSetting('colorStateMapping');
-        this.projectGroups = this.getSetting('projectGroupsWithOrder');
-        
-        if ( Ext.isString(this.colors) ) { this.colors = Ext.JSON.decode(this.colors); }
-        if ( Ext.isString(this.projectGroups) ) { this.projectGroups = Ext.JSON.decode(this.projectGroups); }
-
-        this._addLegend(this.down('#legend_box'), this.colors);
-        this._addSelectors(this.down('#selector_box'));
-        
-        this._makeCardBoard();
+                this._addLegend(this.down('#legend_box'), this.colors);
+                this._addSelectors(this.down('#selector_box'));
+                
+                this._makeCardBoard();
+            },
+            failure: function(msg) {
+                Ext.Msg.alert('Problem Learning PI Types', msg);
+            },
+            scope: this
+        });
     },
     
     _makeCardBoard: function() {
         var me = this;
-        this.setLoading("Loading milestones...");
         if ( this.down('tsroadmaptable') ) { this.down('tsroadmaptable').destroy(); }
         
         this.logger.log("Making new grid ", this.monthCount, " from " , this.startDate);
         
-        this._getAppropriatePIType().then({
-            scope  : this,
-            success: function(types) {
-                this.setLoading('Loading items...');
-                
-                this.PortfolioItemType = types[0];
-                this.logger.log('PI Type:', this.PortfolioItemType);
-                
-                var start_date = this.startDate;
-                var month_count = this.monthCount;
-                
-                this.roadmap = this.down('#display_box').add({ 
-                    xtype: 'tsroadmaptable',
-                    startDate: start_date,
-                    monthCount: month_count,
-                    stateColors: this.colors,
-                    projectGroups: this.projectGroups,
-                    cardModel: this.PortfolioItemType.get('TypePath'),
-                    listeners: {
-                        gridReady: function() {
-                            me.setLoading(false);
-                        }
-                    }
-                });
-                
-                
-            },
-            failure: function(msg) {
-                Ext.Msg.alert('Problem loading PI Type Names', msg);
+        this.setLoading('Loading items...');
+        
+        this.PortfolioItemType = this._getAppropriatePIType();
+        this.ChildItemType = this._getChildPIType();
+        
+        this.logger.log('PI Type:', this.PortfolioItemType);
+        
+        var start_date = this.startDate;
+        var month_count = this.monthCount;
+        
+        this.roadmapConfig = { 
+            xtype: 'tsroadmaptable',
+            childPITypePath: this.ChildItemType.get('TypePath'),
+            startDate: start_date,
+            monthCount: month_count,
+            stateColors: this.colors,
+            projectGroups: this.projectGroups,
+            cardModel: this.PortfolioItemType.get('TypePath')
+        };
+        
+        var config = Ext.clone(this.roadmapConfig);
+        
+        config.listeners =  {
+            gridReady: function() {
                 me.setLoading(false);
             }
-        });
+        };
+        
+        this.roadmap = this.down('#display_box').add(config);
+                
     },
     
     _addSelectors: function(container) {
@@ -18979,31 +18995,27 @@ Ext.define("TSMilestoneRoadmapApp", {
         var orientation = orientations[me.getSetting('pdfOrientation')] || 'l';
         console.log('orientation', orientation, me.getSetting('pdfOrientation'));
         
-        popup.down('#pdf_grid_box').add({
-            xtype: 'tsroadmaptable',
-            startDate: start_date,
-            monthCount: month_count,
-            stateColors: this.colors,
-            projectGroups: this.projectGroups,
-            cardModel: this.PortfolioItemType.get('TypePath'),
-            listeners: {
-                gridReady: function() {
-                    var legend_container = popup.down('#pdf_legend_box');
-                    me._addLegend(legend_container, me.colors);
+        var config = Ext.clone(this.roadmapConfig);
         
-                    var pdf_html = document.getElementById('pdf_box');
-                    
-                    var pdf = new jsPDF(orientation,'pt','letter');
-                    
-                    pdf.addHTML(pdf_html, options, function () {
-                        pdf.save('roadmap.pdf');
-                        me.setLoading(false);
-                        popup.destroy();
-                    });
-                     
-                }
+        config.listeners =  {
+            gridReady: function() {
+                var legend_container = popup.down('#pdf_legend_box');
+                me._addLegend(legend_container, me.colors);
+    
+                var pdf_html = document.getElementById('pdf_box');
+                
+                var pdf = new jsPDF(orientation,'pt','letter');
+                
+                pdf.addHTML(pdf_html, options, function () {
+                    pdf.save('roadmap.pdf');
+                    me.setLoading(false);
+                    popup.destroy();
+                });
+                 
             }
-        });
+        };
+        
+        popup.down('#pdf_grid_box').add(config);
 
     },
     
@@ -19068,6 +19080,7 @@ Ext.define("TSMilestoneRoadmapApp", {
         };
     },
     
+    
     _getPanelTitle: function() {
         var title = "Could not find title";
         
@@ -19078,6 +19091,9 @@ Ext.define("TSMilestoneRoadmapApp", {
         // search up the tree for the portlet 
         var panel_top = Ext.get(grandparent.parent('.x-portlet'));
         // search back down for the title bar
+        if ( Ext.isEmpty(panel_top) ) { 
+            return title;
+        }
         var title_bars = panel_top.query('.x-panel-header-text');
         
         if ( title_bars.length > 0 ) {
@@ -19086,14 +19102,23 @@ Ext.define("TSMilestoneRoadmapApp", {
         return title;
     },
     
-    _getAppropriatePIType: function() {
+    _loadPITypes: function() {
         var config = {
             model: 'TypeDefinition', 
             fetch: ["TypePath"],
-            filters: [ { property:"Ordinal", operator:"=", value:1} ]
+            filters: [{ property:'TypePath', operator:'contains', value:'PortfolioItem/'}],
+            sorters: [ { property:"Ordinal", direction:'ASC'} ]
         };
         
         return TSUtilities.loadWSAPIItems(config);
+    },
+    
+    _getAppropriatePIType: function() {
+        return this.pi_types[1];
+    },
+    
+    _getChildPIType: function() {
+        return this.pi_types[0];
     },
     
     _displayGrid: function(store,field_names){

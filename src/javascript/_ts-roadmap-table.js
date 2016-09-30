@@ -56,6 +56,8 @@
          */
         projectGroups: {},
         
+        childPITypePath: 'PortfolioItem/Feature',
+        
         layout: 'fit'
     },
     
@@ -256,9 +258,6 @@
                         Ext.Array.push( artifacts_by_milestone[key], value );
                     });
                 });
-                                
-                console.log('milestones_with_artifacts', milestones_with_artifacts);
-                console.log('artifacts_by_milestone', artifacts_by_milestone);
                 
                 this._populateChildPredecessors(artifacts_by_milestone).then({
                     scope: this,
@@ -311,6 +310,7 @@
         
         Ext.Array.each(cards, function(card){
             var card_element = Ext.get(card);
+            
             card_element.on('click', function(evt,c) {
                 this._showDialogForPI(c.id);
             },this);
@@ -481,10 +481,10 @@
         });
         
         if ( artifact_filter.length === 0 ) {
-            artifact_filter = [{property:'ObjectID',value: -1}]; // don't look for tasks, but need to fulfill promises
+            artifact_filter = [{property:'ObjectID',value: -1}]; // don't look for items, but need to fulfill promises
         }
         var config = {
-            model: 'PortfolioItem/Feature',
+            model: this.childPITypePath,
             filters: Rally.data.wsapi.Filter.or(artifact_filter),
             fetch: ['Predecessors','Parent','ObjectID','Milestones']
         };
@@ -519,6 +519,11 @@
         var artifact = this.artifacts_by_oid[object_id];
         var me = this;
         
+        if ( Ext.isEmpty(artifact) ) { 
+            console.log("Cannot find artifact record for '", object_id, "'");
+            return; 
+        }
+         
         var title = Ext.String.format("{0} ({1} - {2})",
             artifact.Name,
             artifact.__Milestone.Name,
@@ -551,7 +556,7 @@
                 ],
                 storeConfig          : {
                     pageSize: 10000,
-                    model: 'PortfolioItem/Feature', 
+                    model: this.childPITypePath, 
                     filters: [{property:'Parent.ObjectID', value: object_id}]
                 },
                 listeners: {

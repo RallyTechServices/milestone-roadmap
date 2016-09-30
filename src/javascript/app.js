@@ -34,63 +34,70 @@ Ext.define("TSMilestoneRoadmapApp", {
     launch: function() {
         var me = this;
         
-        this.app_title = "No Title";
+        this._loadPITypes().then({
+            success: function(pi_types) {
+                this.pi_types = pi_types;
+                
+                this.app_title = "No Title";
+                
+                if ( !this.isExternal() ) {
+                    this.app_title = this._getPanelTitle();
+                }
+                
+                this.colors = this.getSetting('colorStateMapping');
+                this.projectGroups = this.getSetting('projectGroupsWithOrder');
+                
+                if ( Ext.isString(this.colors) ) { this.colors = Ext.JSON.decode(this.colors); }
+                if ( Ext.isString(this.projectGroups) ) { this.projectGroups = Ext.JSON.decode(this.projectGroups); }
         
-        if ( !this.isExternal() ) {
-            this.app_title = this._getPanelTitle();
-        }
-        
-        this.colors = this.getSetting('colorStateMapping');
-        this.projectGroups = this.getSetting('projectGroupsWithOrder');
-        
-        if ( Ext.isString(this.colors) ) { this.colors = Ext.JSON.decode(this.colors); }
-        if ( Ext.isString(this.projectGroups) ) { this.projectGroups = Ext.JSON.decode(this.projectGroups); }
-
-        this._addLegend(this.down('#legend_box'), this.colors);
-        this._addSelectors(this.down('#selector_box'));
-        
-        this._makeCardBoard();
+                this._addLegend(this.down('#legend_box'), this.colors);
+                this._addSelectors(this.down('#selector_box'));
+                
+                this._makeCardBoard();
+            },
+            failure: function(msg) {
+                Ext.Msg.alert('Problem Learning PI Types', msg);
+            },
+            scope: this
+        });
     },
     
     _makeCardBoard: function() {
         var me = this;
-        this.setLoading("Loading milestones...");
         if ( this.down('tsroadmaptable') ) { this.down('tsroadmaptable').destroy(); }
         
         this.logger.log("Making new grid ", this.monthCount, " from " , this.startDate);
         
-        this._getAppropriatePIType().then({
-            scope  : this,
-            success: function(types) {
-                this.setLoading('Loading items...');
-                
-                this.PortfolioItemType = types[0];
-                this.logger.log('PI Type:', this.PortfolioItemType);
-                
-                var start_date = this.startDate;
-                var month_count = this.monthCount;
-                
-                this.roadmap = this.down('#display_box').add({ 
-                    xtype: 'tsroadmaptable',
-                    startDate: start_date,
-                    monthCount: month_count,
-                    stateColors: this.colors,
-                    projectGroups: this.projectGroups,
-                    cardModel: this.PortfolioItemType.get('TypePath'),
-                    listeners: {
-                        gridReady: function() {
-                            me.setLoading(false);
-                        }
-                    }
-                });
-                
-                
-            },
-            failure: function(msg) {
-                Ext.Msg.alert('Problem loading PI Type Names', msg);
+        this.setLoading('Loading items...');
+        
+        this.PortfolioItemType = this._getAppropriatePIType();
+        this.ChildItemType = this._getChildPIType();
+        
+        this.logger.log('PI Type:', this.PortfolioItemType);
+        
+        var start_date = this.startDate;
+        var month_count = this.monthCount;
+        
+        this.roadmapConfig = { 
+            xtype: 'tsroadmaptable',
+            childPITypePath: this.ChildItemType.get('TypePath'),
+            startDate: start_date,
+            monthCount: month_count,
+            stateColors: this.colors,
+            projectGroups: this.projectGroups,
+            cardModel: this.PortfolioItemType.get('TypePath')
+        };
+        
+        var config = Ext.clone(this.roadmapConfig);
+        
+        config.listeners =  {
+            gridReady: function() {
                 me.setLoading(false);
             }
-        });
+        };
+        
+        this.roadmap = this.down('#display_box').add(config);
+                
     },
     
     _addSelectors: function(container) {
@@ -199,31 +206,27 @@ Ext.define("TSMilestoneRoadmapApp", {
         var orientation = orientations[me.getSetting('pdfOrientation')] || 'l';
         console.log('orientation', orientation, me.getSetting('pdfOrientation'));
         
-        popup.down('#pdf_grid_box').add({
-            xtype: 'tsroadmaptable',
-            startDate: start_date,
-            monthCount: month_count,
-            stateColors: this.colors,
-            projectGroups: this.projectGroups,
-            cardModel: this.PortfolioItemType.get('TypePath'),
-            listeners: {
-                gridReady: function() {
-                    var legend_container = popup.down('#pdf_legend_box');
-                    me._addLegend(legend_container, me.colors);
+        var config = Ext.clone(this.roadmapConfig);
         
-                    var pdf_html = document.getElementById('pdf_box');
-                    
-                    var pdf = new jsPDF(orientation,'pt','letter');
-                    
-                    pdf.addHTML(pdf_html, options, function () {
-                        pdf.save('roadmap.pdf');
-                        me.setLoading(false);
-                        popup.destroy();
-                    });
-                     
-                }
+        config.listeners =  {
+            gridReady: function() {
+                var legend_container = popup.down('#pdf_legend_box');
+                me._addLegend(legend_container, me.colors);
+    
+                var pdf_html = document.getElementById('pdf_box');
+                
+                var pdf = new jsPDF(orientation,'pt','letter');
+                
+                pdf.addHTML(pdf_html, options, function () {
+                    pdf.save('roadmap.pdf');
+                    me.setLoading(false);
+                    popup.destroy();
+                });
+                 
             }
-        });
+        };
+        
+        popup.down('#pdf_grid_box').add(config);
 
     },
     
@@ -288,6 +291,7 @@ Ext.define("TSMilestoneRoadmapApp", {
         };
     },
     
+    
     _getPanelTitle: function() {
         var title = "Could not find title";
         
@@ -298,6 +302,9 @@ Ext.define("TSMilestoneRoadmapApp", {
         // search up the tree for the portlet 
         var panel_top = Ext.get(grandparent.parent('.x-portlet'));
         // search back down for the title bar
+        if ( Ext.isEmpty(panel_top) ) { 
+            return title;
+        }
         var title_bars = panel_top.query('.x-panel-header-text');
         
         if ( title_bars.length > 0 ) {
@@ -306,14 +313,23 @@ Ext.define("TSMilestoneRoadmapApp", {
         return title;
     },
     
-    _getAppropriatePIType: function() {
+    _loadPITypes: function() {
         var config = {
             model: 'TypeDefinition', 
             fetch: ["TypePath"],
-            filters: [ { property:"Ordinal", operator:"=", value:1} ]
+            filters: [{ property:'TypePath', operator:'contains', value:'PortfolioItem/'}],
+            sorters: [ { property:"Ordinal", direction:'ASC'} ]
         };
         
         return TSUtilities.loadWSAPIItems(config);
+    },
+    
+    _getAppropriatePIType: function() {
+        return this.pi_types[1];
+    },
+    
+    _getChildPIType: function() {
+        return this.pi_types[0];
     },
     
     _displayGrid: function(store,field_names){

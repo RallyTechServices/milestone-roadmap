@@ -408,6 +408,8 @@ Ext.define('Rally.data.wsapi.ProjectTreeStore', {
     extend: 'Rally.data.wsapi.TreeStore',
     alias: 'store.rallyprojectwsapitreestore',
 
+    autoSync: true,
+    
     /**
      * The type definition typePaths to render as root items (required)
      * @cfg {String[]} parentTypes
@@ -422,7 +424,7 @@ Ext.define('Rally.data.wsapi.ProjectTreeStore', {
         property: 'Name',
         direction: 'ASC'
     }],
-
+        
     getParentFieldNamesByChildType: function(childType, parentType) {
         var model = this.model; //.getArtifactComponentModel(childType);
         return _.transform(this.mapper.getParentFields(childType, parentType), function(acc, field) {

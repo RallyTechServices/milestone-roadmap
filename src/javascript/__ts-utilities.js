@@ -6,7 +6,7 @@ Ext.define('TSUtilities',{
         var deferred = Ext.create('Deft.Deferred');
         var me = this;
         
-        this.logger.log(config.model, "Loading with filters: ", Ext.clone(config.filters));
+        this.logger.log("Loading ", config.model, " with filters: ", Ext.clone(config.filters));
         
         var default_config = {
             fetch: ['ObjectID']
