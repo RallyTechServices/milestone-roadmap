@@ -443,7 +443,9 @@
         var config = {
             model:   this.cardModel,
             fetch:   ['FormattedID', 'Name', 'ObjectID','Project','State','Children','Predecessors'],
-            filters: [{property:'Milestones.ObjectID', operator: 'contains', value: milestone_oid}]
+            filters: [{property:'Milestones.ObjectID', operator: 'contains', value: milestone_oid}],
+            pageSize: 2000,
+            limit: Infinity
         };
         
         TSUtilities.loadWSAPIItems(config).then({
@@ -486,7 +488,9 @@
         var config = {
             model: this.childPITypePath,
             filters: Rally.data.wsapi.Filter.or(artifact_filter),
-            fetch: ['Predecessors','Parent','ObjectID','Milestones']
+            fetch: ['Predecessors','Parent','ObjectID','Milestones'],
+            limit: Infinity,
+            pageSize: 2000
         };
         
         TSUtilities.loadWSAPIItems(config).then({

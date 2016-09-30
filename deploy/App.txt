@@ -3,13 +3,13 @@
 <head>
     <title>Integrated Planning Dashboard</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Thu Sep 29 2016 19:23:35 GMT-0700 (PDT) -->
+    <!--  Build Date: Thu Sep 29 2016 19:27:47 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Sep 29 2016 19:23:35 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Thu Sep 29 2016 19:27:47 GMT-0700 (PDT)";
         var STORY    = " ";
         var BUILDER  = "jmartin";
-        var CHECKSUM = 10674428586497;
+        var CHECKSUM = 10676913834796;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -18582,7 +18582,9 @@ Ext.define('Rally.techservices.ColorSettingsField', {
         var config = {
             model:   this.cardModel,
             fetch:   ['FormattedID', 'Name', 'ObjectID','Project','State','Children','Predecessors'],
-            filters: [{property:'Milestones.ObjectID', operator: 'contains', value: milestone_oid}]
+            filters: [{property:'Milestones.ObjectID', operator: 'contains', value: milestone_oid}],
+            pageSize: 2000,
+            limit: Infinity
         };
         
         TSUtilities.loadWSAPIItems(config).then({
@@ -18625,7 +18627,9 @@ Ext.define('Rally.techservices.ColorSettingsField', {
         var config = {
             model: this.childPITypePath,
             filters: Rally.data.wsapi.Filter.or(artifact_filter),
-            fetch: ['Predecessors','Parent','ObjectID','Milestones']
+            fetch: ['Predecessors','Parent','ObjectID','Milestones'],
+            limit: Infinity,
+            pageSize: 2000
         };
         
         TSUtilities.loadWSAPIItems(config).then({
