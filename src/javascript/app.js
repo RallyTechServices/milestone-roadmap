@@ -297,19 +297,26 @@ Ext.define("TSMilestoneRoadmapApp", {
         
         var iframe_parent = window.frameElement ? window.frameElement.parentNode : null;
 
-        // pop outsied the iframe
+        // pop outside the iframe
         var grandparent = Ext.get(iframe_parent.parentNode);
+        
         // search up the tree for the portlet 
-        var panel_top = Ext.get(grandparent.parent('.x-portlet'));
+        //var panel_top = Ext.get(grandparent.parent('.x-portlet'));
+        var panel_top = grandparent.dom.offsetParent;
+                
         // search back down for the title bar
         if ( Ext.isEmpty(panel_top) ) { 
             return title;
         }
-        var title_bars = panel_top.query('.x-panel-header-text');
         
-        if ( title_bars.length > 0 ) {
-            title = title_bars[0].innerHTML;
-        }
+        var top_element = Ext.get(panel_top);
+        
+        title = top_element.dom.textContent;
+//        var title_bars = panel_top.query('.x-panel-header-text');
+//        
+//        if ( title_bars.length > 0 ) {
+//            title = title_bars[0].innerHTML;
+//        }
         return title;
     },
     

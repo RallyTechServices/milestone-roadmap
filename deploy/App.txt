@@ -3,13 +3,13 @@
 <head>
     <title>Integrated Planning Dashboard</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Thu Sep 29 2016 19:27:47 GMT-0700 (PDT) -->
+    <!--  Build Date: Thu Sep 29 2016 19:48:00 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Sep 29 2016 19:27:47 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Thu Sep 29 2016 19:48:00 GMT-0700 (PDT)";
         var STORY    = " ";
         var BUILDER  = "jmartin";
-        var CHECKSUM = 10676913834796;
+        var CHECKSUM = 10682440490168;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -19090,19 +19090,26 @@ Ext.define("TSMilestoneRoadmapApp", {
         
         var iframe_parent = window.frameElement ? window.frameElement.parentNode : null;
 
-        // pop outsied the iframe
+        // pop outside the iframe
         var grandparent = Ext.get(iframe_parent.parentNode);
+        
         // search up the tree for the portlet 
-        var panel_top = Ext.get(grandparent.parent('.x-portlet'));
+        //var panel_top = Ext.get(grandparent.parent('.x-portlet'));
+        var panel_top = grandparent.dom.offsetParent;
+                
         // search back down for the title bar
         if ( Ext.isEmpty(panel_top) ) { 
             return title;
         }
-        var title_bars = panel_top.query('.x-panel-header-text');
         
-        if ( title_bars.length > 0 ) {
-            title = title_bars[0].innerHTML;
-        }
+        var top_element = Ext.get(panel_top);
+        
+        title = top_element.dom.textContent;
+//        var title_bars = panel_top.query('.x-panel-header-text');
+//        
+//        if ( title_bars.length > 0 ) {
+//            title = title_bars[0].innerHTML;
+//        }
         return title;
     },
     
